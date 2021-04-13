@@ -18,9 +18,9 @@ const
     BASE: int64 = 10000000000000000
     BASE2: int64 = 100000000
     LOG_BASE: int = 16
-    KARATSUBA_THRESHOLD: int = 50
-    TOOM3_THRESHOLD: int = 250
-    TOOM4_THRESHOLD: int = 900
+    KARATSUBA_THRESHOLD: int = 43
+    TOOM3_THRESHOLD: int = 180
+    TOOM4_THRESHOLD: int = 870
     validCharsForBigInt: string = "01234567890"
     validCharsForBigFloat: string = ".0123456789"
     
@@ -112,7 +112,7 @@ proc toStr*(x: BigInt): string =
         t2 = "0".repeat(LOG_BASE - n)
         t2.add(t)
         s.add(t2)
-    if x.sign == false:
+    if not x.sign:
         result = "-"
         result.add(s)
     else:
@@ -306,7 +306,9 @@ proc schoolbookMul(x, y: BigInt): BigInt =
         yLimbsSplitted: seq[int64] = newSeqUninitialized[int64](2 * n)
         resultLimbsSplitted: seq[int64]
     if (x == zero) or (y == zero):
-        result = zero
+        result = new BigInt
+        result.sign = true
+        result.limbs = @[0'i64]
     else:
         for i in 0..(m-1):
             t = x.limbs[i] div BASE2
@@ -344,7 +346,9 @@ proc schoolbookSqr(x: BigInt): BigInt =
         xLimbsSplitted: seq[int64] = newSeqUninitialized[int64](2 * m)
         resultLimbsSplitted: seq[int64]
     if x == zero:
-        result = zero
+        result = new BigInt
+        result.sign = true
+        result.limbs = @[0'i64]
     else:
         for i in 0..(m-1):
             t = x.limbs[i] div BASE2
@@ -370,6 +374,82 @@ proc schoolbookSqr(x: BigInt): BigInt =
             result.limbs[i] = resultLimbsSplitted[2*i] + (resultLimbsSplitted[2*i + 1] * BASE2)
         result.removeLeadingZeros()
 
+# Unsigned destructive addition. Only works when x >= y >= 0. Used for Karatsuba and Toom-Cook multiplication.
+proc udadd(x, y: var BigInt): BigInt =
+    var
+        m: int = len(x.limbs)
+        n: int = len(y.limbs)
+    x.limbs.setLen(m+1)
+    for i in 0..(n - 1):
+        x.limbs[i] += y.limbs[i]
+        if x.limbs[i] >= BASE:
+            x.limbs[i] -= BASE 
+            x.limbs[i+1] += 1 
+    for i in n..m:
+        if x.limbs[i] >= BASE:
+            x.limbs[i] -= BASE 
+            x.limbs[i+1] += 1 
+        else:
+            break
+    x.removeLeadingZeros()
+    result = x
+
+# Unsigned destructive subtraction. Only works when x >= y >= 0. Used for Karatsuba and Toom-Cook multiplication.
+proc udsub(x, y: var BigInt): BigInt =
+    var 
+        m: int = len(x.limbs)
+        n: int = len(y.limbs)
+    for i in 0..(n - 1):
+        x.limbs[i] -= y.limbs[i]
+        if x.limbs[i] < 0'i64:
+            x.limbs[i] += BASE
+            x.limbs[i+1] -= 1    
+    for i in n..(m - 1):
+        if x.limbs[i] < 0'i64:
+            x.limbs[i] += BASE
+            x.limbs[i+1] -= 1
+        else:
+            break    
+    x.removeLeadingZeros()
+    result = x
+
+# Destructive absolute value.
+proc dabs(x: var BigInt) =
+    x.sign = true
+ 
+# Destructive negation.
+proc dneg(x: var BigInt) =
+    if x == zero:
+        discard
+    else:
+        x.sign = not x.sign
+
+# Destructive addition.
+proc dadd(x, y: var BigInt): BigInt =
+    if abs(x) < abs(y):
+        result = y.dadd(x)
+    else:
+        if (x >= zero) and (y >= zero):
+            result = x.udadd(y)
+        elif (x < zero) and (y < zero):
+            x.dabs()
+            y.dabs()
+            result = -(x.udadd(y))
+        elif (x >= zero) and (y < zero):
+            y.dabs()
+            result = x.udsub(y)
+        else:
+            x.dabs()
+            result = -(x.udsub(y))
+            # The sign of zero is always positive.
+            if result.limbs == @[0'i64]:
+                result.sign = true
+
+# Destructive subtraction.
+proc dsub(x, y: var BigInt): BigInt =
+    y.dneg()
+    result = x.dadd(y)
+
 # Karatsuba multiplication. Time complexity is O(n^1.585).
 proc karatsubaMul(x, y: BigInt): BigInt =
     var
@@ -384,18 +464,21 @@ proc karatsubaMul(x, y: BigInt): BigInt =
             x1: BigInt = BigInt(sign: true, limbs: x.limbs[a..(m - 1)])
             y0: BigInt = BigInt(sign: true, limbs: y.limbs[0..(a - 1)])
             y1: BigInt = BigInt(sign: true, limbs: y.limbs[a..(n - 1)])
-            z2: BigInt
             z1: BigInt
-            z0: BigInt         
+            z0: BigInt       
+            tmp: BigInt  
+            zeros: seq[int64] = newSeq[int64](a)
         x0.removeLeadingZeros()
         y0.removeLeadingZeros()
-        z2 = x1.karatsubaMul(y1)
+        result = x1.karatsubaMul(y1)
         z0 = x0.karatsubaMul(y0)
-        z1 = (z2 + z0) - ((x1 - x0).karatsubaMul(y1 - y0))
-        z2.limbs.insert(newSeq[int64](2 * a), 0)
-        if z1.limbs != @[0'i64]:
-            z1.limbs.insert(newSeq[int64](a), 0)
-        result = z2 + z1 + z0
+        z1 = result + z0
+        tmp = (x1.dsub(x0)).karatsubaMul(y1.dsub(y0))
+        z1 = z1.dsub(tmp)
+        result.limbs.insert(zeros, 0)
+        result = result.udadd(z1)
+        result.limbs.insert(zeros, 0)
+        result = result.udadd(z0)
         result.sign = (x.sign == y.sign)
 
 # Karatsuba squaring.
@@ -409,17 +492,20 @@ proc karatsubaSqr(x: BigInt): BigInt =
         var
             x0: BigInt = BigInt(sign: true, limbs: x.limbs[0..(a - 1)])
             x1: BigInt = BigInt(sign: true, limbs: x.limbs[a..(m - 1)])
-            z2: BigInt
             z1: BigInt
             z0: BigInt
+            tmp: BigInt
+            zeros: seq[int64] = newSeq[int64](a)
         x0.removeLeadingZeros()
-        z2 = x1.karatsubaSqr()
+        result = x1.karatsubaSqr()
         z0 = x0.karatsubaSqr()
-        z1 = (z2 + z0) - (x1 - x0).karatsubaSqr()
-        z2.limbs.insert(newSeq[int64](2 * a), 0)
-        if z1.limbs != @[0'i64]:
-            z1.limbs.insert(newSeq[int64](a), 0)
-        result = z2 + z1 + z0
+        z1 = result + z0
+        tmp = (x1.dsub(x0)).karatsubaSqr()
+        z1 = z1.dsub(tmp)
+        result.limbs.insert(zeros, 0)
+        result = result.udadd(z1)
+        result.limbs.insert(zeros, 0)
+        result = result.udadd(z0)
         result.sign = true
 
 # Multiplication by small integers. Only used for Toom Cook multiplication.        
@@ -428,18 +514,13 @@ proc mulInt(x: BigInt, y: int64): BigInt =
         m: int = len(x.limbs)
         t: int64
         t2: int64
-        #y2: int64 = y    
     result = new BigInt
     result.sign = x.sign
-    #if y2 < 0:
-        #result.sign = not x.sign
-        #y2 = -y2
-    result.limbs = newSeqUninitialized[int64](m+2)
+    result.limbs = newSeqUninitialized[int64](m+1)
     for i in 0..(m-1):
         result.limbs[i] = x.limbs[i] * y
     result.limbs[m] = 0'i64
-    result.limbs[m+1] = 0'i64
-    for i in 0..(m+1):
+    for i in 0..m:
         t = result.limbs[i]
         if t >= BASE:
             t2 = t div BASE
@@ -448,6 +529,26 @@ proc mulInt(x: BigInt, y: int64): BigInt =
     result.removeLeadingZeros()
     if result.limbs == @[0'i64]:
         result.sign = true
+
+# Destructive mulInt.
+proc dmulInt(x: var BigInt, y: int64): BigInt =
+    var 
+        m: int = len(x.limbs)
+        t: int64
+        t2: int64
+    x.limbs.setLen(m+1)
+    for i in 0..(m-1):
+        x.limbs[i] *= y
+    for i in 0..m:
+        t = x.limbs[i]
+        if t >= BASE:
+            t2 = t div BASE
+            x.limbs[i] -= t2 * BASE
+            x.limbs[i+1] += t2
+    x.removeLeadingZeros()
+    if x.limbs == @[0'i64]:
+        x.sign = true
+    result = x
 
 # Division by small integers. Only used for Toom Cook multiplication. 
 proc divInt(x: BigInt, y: int64): BigInt = 
@@ -463,6 +564,19 @@ proc divInt(x: BigInt, y: int64): BigInt =
     result.removeLeadingZeros()
     if result.limbs == @[0'i64]:
         result.sign = true
+
+# Destructive divInt.
+proc ddivInt(x: var BigInt, y: int64): BigInt = 
+    var t: int64
+    for i in countdown((len(x.limbs) - 1), 1):
+        t = x.limbs[i]
+        x.limbs[i] = t div y
+        x.limbs[i-1] += (t - (x.limbs[i] * y)) * BASE
+    x.limbs[0] = x.limbs[0] div y
+    x.removeLeadingZeros()
+    if x.limbs == @[0'i64]:
+        x.sign = true
+    result = x
 
 # Toom Cook 3 multiplication. Time complexity is O(n^1.465).
 # Evaluation points are infinity, 1, -1, -2 and 0.
@@ -486,11 +600,12 @@ proc toom3Mul(x, y: BigInt): BigInt =
             am2: BigInt
             tmp: BigInt
             tmp2: BigInt
-            z4: BigInt
+            tmp3: BigInt
             z3: BigInt
             z2: BigInt
             z1: BigInt
             z0: BigInt
+            zeros: seq[int64] = newSeq[int64](a)
         x0.removeLeadingZeros()
         x1.removeLeadingZeros()
         y0.removeLeadingZeros()
@@ -500,23 +615,36 @@ proc toom3Mul(x, y: BigInt): BigInt =
         z0 = x0.toom3Mul(y0)
         a1 = (tmp + x1).toom3Mul(tmp2 + y1)
         am1 = (tmp - x1).toom3Mul(tmp2 - y1)
-        am2 = (x2.mulInt(4) - x1.mulInt(2) + x0).toom3Mul(y2.mulInt(4) - y1.mulInt(2) + y0)
-        z4 = x2.toom3Mul(y2)
+        result = x2.toom3Mul(y2) 
+        tmp = x2.dmulInt(4)
+        tmp3 = x1.dmulInt(2)
+        tmp = tmp.dsub(tmp3)
+        tmp2 = y2.dmulInt(4)
+        tmp3 = y1.dmulInt(2)
+        tmp2 = tmp2.dsub(tmp3)
+        am2 = (tmp.dadd(x0)).toom3Mul(tmp2.dadd(y0))
         tmp = am2 + z0.mulInt(3)
         z1 = tmp + a1.mulInt(2)
-        z1 = z1.divInt(6) - z4.mulInt(2) - am1
-        z2 = -z0 - z4 + (a1 + am1).divInt(2)
-        z3 = -tmp + a1 + am1.mulInt(3)
-        z3 = z3.divInt(6) + z4.mulInt(2)       
-        if z4.limbs != @[0'i64]:
-            z4.limbs.insert(newSeq[int64](4 * a), 0)
-        if z3.limbs != @[0'i64]:
-            z3.limbs.insert(newSeq[int64](3 * a), 0)
-        if z2.limbs != @[0'i64]:
-            z2.limbs.insert(newSeq[int64](2 * a), 0)
-        if z1.limbs != @[0'i64]:
-            z1.limbs.insert(newSeq[int64](a), 0)
-        result = z0 + z1 + z2 + z3 + z4
+        z1 = z1.ddivInt(6)
+        tmp3 = result.mulInt(2) + am1
+        z1 = z1.dsub(tmp3)
+        tmp2 = a1 + am1
+        tmp2 = tmp2.ddivInt(2)
+        z2 = -z0 - result + tmp2
+        tmp = a1.dsub(tmp)
+        z3 = am1.dmulInt(3)
+        z3 = z3.dadd(tmp)
+        z3 = z3.ddivInt(6)
+        tmp3 = result.mulInt(2) 
+        z3 = z3.dadd(tmp3)
+        result.limbs.insert(zeros, 0)
+        result = result.udadd(z3)
+        result.limbs.insert(zeros, 0)
+        result = result.udadd(z2)
+        result.limbs.insert(zeros, 0)
+        result = result.udadd(z1)
+        result.limbs.insert(zeros, 0)
+        result = result.udadd(z0)
         result.sign = (x.sign == y.sign)
 
 # Toom Cook 3 squaring.
@@ -536,34 +664,46 @@ proc toom3Sqr(x: BigInt): BigInt =
             a1: BigInt
             am2: BigInt
             tmp: BigInt
-            z4: BigInt
+            tmp2: BigInt
+            tmp3: BigInt
             z3: BigInt
             z2: BigInt
             z1: BigInt
-            z0: BigInt        
+            z0: BigInt
+            zeros: seq[int64] = newSeq[int64](a)
         x0.removeLeadingZeros()
         x1.removeLeadingZeros()
         tmp = x0 + x2
         z0 = x0.toom3Sqr()
         a1 = (tmp + x1).toom3Sqr()
         am1 = (tmp - x1).toom3Sqr()
-        am2 = (x2.mulInt(4) - x1.mulInt(2) + x0).toom3Sqr()
-        z4 = x2.toom3Sqr()
+        result = x2.toom3Sqr()
+        tmp = x2.dmulInt(4)
+        tmp3 = x1.dmulInt(2)
+        tmp = tmp.dsub(tmp3)
+        am2 = (tmp.dadd(x0)).toom3Sqr()
         tmp = am2 + z0.mulInt(3)
         z1 = tmp + a1.mulInt(2)
-        z1 = z1.divInt(6) - z4.mulInt(2) - am1
-        z2 = -z0 - z4 + (a1 + am1).divInt(2)
-        z3 = -tmp + a1 + am1.mulInt(3)
-        z3 = z3.divInt(6) + z4.mulInt(2)       
-        if z4.limbs != @[0'i64]:
-            z4.limbs.insert(newSeq[int64](4 * a), 0)
-        if z3.limbs != @[0'i64]:
-            z3.limbs.insert(newSeq[int64](3 * a), 0)
-        if z2.limbs != @[0'i64]:
-            z2.limbs.insert(newSeq[int64](2 * a), 0)
-        if z1.limbs != @[0'i64]:
-            z1.limbs.insert(newSeq[int64](a), 0)
-        result = z0 + z1 + z2 + z3 + z4
+        z1 = z1.ddivInt(6)
+        tmp3 = result.mulInt(2) + am1
+        z1 = z1.dsub(tmp3)
+        tmp2 = a1 + am1
+        tmp2 = tmp2.ddivInt(2)
+        z2 = -z0 - result + tmp2
+        tmp = a1.dsub(tmp)
+        z3 = am1.dmulInt(3)
+        z3 = z3.dadd(tmp)
+        z3 = z3.ddivInt(6)
+        tmp3 = result.mulInt(2) 
+        z3 = z3.dadd(tmp3)
+        result.limbs.insert(zeros, 0)
+        result = result.udadd(z3)
+        result.limbs.insert(zeros, 0)
+        result = result.udadd(z2)
+        result.limbs.insert(zeros, 0)
+        result = result.udadd(z1)
+        result.limbs.insert(zeros, 0)
+        result = result.udadd(z0)
         result.sign = true
 
 # Toom Cook 4 multiplication. Time complexity is O(n^1.404).
@@ -594,13 +734,14 @@ proc toom4Mul(x, y: BigInt): BigInt =
             tmp2: BigInt
             tmp3: BigInt
             tmp4: BigInt
-            z6: BigInt
+            tmp5: BigInt
             z5: BigInt
             z4: BigInt
             z3: BigInt
             z2: BigInt
             z1: BigInt
-            z0: BigInt           
+            z0: BigInt         
+            zeros: seq[int64] = newSeq[int64](a)  
         x0.removeLeadingZeros()
         x1.removeLeadingZeros()
         x2.removeLeadingZeros()
@@ -608,47 +749,95 @@ proc toom4Mul(x, y: BigInt): BigInt =
         y1.removeLeadingZeros()
         y2.removeLeadingZeros()
         z0 = x0.toom4Mul(y0)
-        z6 = x3.toom4Mul(y3)
-        amhalf = (-x3 + x2.mulInt(2) - x1.mulInt(4) + x0.mulInt(8)).toom4Mul(-y3 + y2.mulInt(2) - y1.mulInt(4) + y0.mulInt(8))        
-        tmp = x3.mulInt(8) + x1.mulInt(2)
+        result = x3.toom4Mul(y3)
+        tmp = x3.mulInt(8)
+        tmp5 = x1.mulInt(2)
+        tmp = tmp.dadd(tmp5)
         tmp2 = x2.mulInt(4) + x0
-        tmp3 = y3.mulInt(8) + y1.mulInt(2)
+        tmp3 = y3.mulInt(8)
+        tmp5 = y1.mulInt(2)
+        tmp3 = tmp3.dadd(tmp5)
         tmp4 = y2.mulInt(4) + y0
         a2 = (tmp + tmp2).toom4Mul(tmp3 + tmp4)
-        am2 = (-tmp + tmp2).toom4Mul(-tmp3 + tmp4)
+        am2 = (tmp2.dsub(tmp)).toom4Mul(tmp4.dsub(tmp3))
         tmp = x3 + x1
         tmp2 = x2 + x0
         tmp3 = y3 + y1
         tmp4 = y2 + y0
         a1 = (tmp + tmp2).toom4Mul(tmp3 + tmp4)
-        am1 = (-tmp + tmp2).toom4Mul(-tmp3 + tmp4)
-        tmp = z0 + z6
+        am1 = (tmp2.dsub(tmp)).toom4Mul(tmp4.dsub(tmp3))
+        tmp = x2.dmulInt(2)
+        tmp = tmp.dsub(x3)
+        tmp3 = x1.dmulInt(4)
+        tmp = tmp.dsub(tmp3)
+        tmp3 = x0.dmulInt(8)
+        tmp = tmp.dadd(tmp3)
+        tmp2 = y2.dmulInt(2)
+        tmp2 = tmp2.dsub(y3)
+        tmp3 = y1.dmulInt(4)
+        tmp2 = tmp2.dsub(tmp3)
+        tmp3 = y0.dmulInt(8)
+        tmp2 = tmp2.dadd(tmp3)
+        amhalf = tmp.toom4Mul(tmp2)
+        tmp = z0 + result
         tmp2 = a1 + am1
         tmp3 = am2.mulInt(5)
         tmp4 = a2.mulInt(3)
-        z5 = tmp.mulInt(90) - amhalf.mulInt(2) + tmp4 - tmp3 - a1.mulInt(20) + am1.mulInt(60)
+        z5 = tmp.mulInt(90)
+        tmp5 = amhalf.mulInt(2)
+        z5 = z5.dsub(tmp5)
+        tmp5 = tmp4 - tmp3
+        z5 = z5.dadd(tmp5)
+        tmp5 = a1.mulInt(20)
+        z5 = z5.dsub(tmp5)
+        tmp5 = am1.mulInt(60)
+        z5 = z5.dadd(tmp5)
         z5 = z5.divInt(180)
-        z1 = -amhalf.mulInt(8) - tmp4 - tmp3 + a1.mulInt(40) + am1.mulInt(120)
-        z1 = z1.divInt(180) + tmp.mulInt(2)
+        z1 = -amhalf.mulInt(8)
+        tmp5 = tmp4 + tmp3
+        z1 = z1.dsub(tmp5)
+        tmp5 = a1.mulInt(40)
+        z1 = z1.dadd(tmp5)
+        tmp5 = am1.mulInt(120)
+        z1 = z1.dadd(tmp5)
+        z1 = z1.ddivInt(180)
+        tmp5 = tmp.mulInt(2)
+        z1 = z1.dadd(tmp5)
         tmp3 = a2 + am2
-        z4 = tmp3 - tmp2.mulInt(4) + z0.mulInt(6)
-        z4 = z4.divInt(24) - z6.mulInt(5)
-        z3 = -(tmp.mulInt(45)) + amhalf + am2 + a1.mulInt(7) - am1.mulInt(27)
-        z3 = z3.divInt(18)
-        z2 = -tmp3 + tmp2.mulInt(16) - z0.mulInt(30)
-        z2 = z2.divInt(24) + z6.mulInt(4)
-        z6.limbs.insert(newSeq[int64](6 * a), 0)
-        if z5.limbs != @[0'i64]:
-            z5.limbs.insert(newSeq[int64](5 * a), 0)
-        if z4.limbs != @[0'i64]:
-            z4.limbs.insert(newSeq[int64](4 * a), 0)
-        if z3.limbs != @[0'i64]:
-            z3.limbs.insert(newSeq[int64](3 * a), 0)
-        if z2.limbs != @[0'i64]:
-            z2.limbs.insert(newSeq[int64](2 * a), 0)
-        if z1.limbs != @[0'i64]:
-            z1.limbs.insert(newSeq[int64](a), 0)
-        result = z0 + z1 + z2 + z3 + z4 + z5 + z6
+        tmp5 = tmp2.mulInt(4)
+        z4 = tmp3 - tmp5
+        tmp5 = z0.mulInt(6)
+        z4 = z4.dadd(tmp5)
+        tmp5 = result.mulInt(5)
+        z4 = z4.ddivInt(24)
+        z4 = z4.dsub(tmp5)
+        tmp = tmp.dmulInt(45)
+        z3 = amhalf.dsub(tmp)
+        z3 = z3.dadd(am2)
+        tmp = a1.dmulInt(7)
+        z3 = z3.dadd(tmp)
+        tmp = am1.dmulInt(27)
+        z3 = z3.dsub(tmp)
+        z3 = z3.ddivInt(18)
+        tmp = z0.mulInt(30)
+        z2 = tmp2.dmulInt(16)
+        z2 = z2.dsub(tmp3)
+        z2 = z2.dsub(tmp)
+        tmp = result.mulInt(4)
+        z2 = z2.ddivInt(24)
+        z2 = z2.dadd(tmp)
+        result.limbs.insert(zeros, 0)
+        result = result.udadd(z5)
+        result.limbs.insert(zeros, 0)
+        result = result.udadd(z4)
+        result.limbs.insert(zeros, 0)
+        result = result.udadd(z3)
+        result.limbs.insert(zeros, 0)
+        result = result.udadd(z2)
+        result.limbs.insert(zeros, 0)
+        result = result.udadd(z1)
+        result.limbs.insert(zeros, 0)
+        result = result.udadd(z0)
         result.sign = (x.sign == y.sign)
 
 # Toom Cook 4 squaring.
@@ -673,54 +862,96 @@ proc toom4Sqr(x: BigInt): BigInt =
             tmp: BigInt
             tmp2: BigInt
             tmp3: BigInt
-            z6: BigInt
+            tmp4: BigInt
+            tmp5: BigInt
             z5: BigInt
             z4: BigInt
             z3: BigInt
             z2: BigInt
             z1: BigInt
-            z0: BigInt          
+            z0: BigInt         
+            zeros: seq[int64] = newSeq[int64](a)  
         x0.removeLeadingZeros()
         x1.removeLeadingZeros()
         x2.removeLeadingZeros()
         z0 = x0.toom4Sqr()
-        z6 = x3.toom4Sqr()
-        amhalf = (-x3 + x2.mulInt(2) - x1.mulInt(4) + x0.mulInt(8)).toom4Sqr()        
-        tmp = x3.mulInt(8) + x1.mulInt(2)
+        result = x3.toom4Sqr()
+        tmp = x3.mulInt(8)
+        tmp5 = x1.mulInt(2)
+        tmp = tmp.dadd(tmp5)
         tmp2 = x2.mulInt(4) + x0
         a2 = (tmp + tmp2).toom4Sqr()
-        am2 = (-tmp + tmp2).toom4Sqr()
+        am2 = (tmp2.dsub(tmp)).toom4Sqr()
         tmp = x3 + x1
         tmp2 = x2 + x0
         a1 = (tmp + tmp2).toom4Sqr()
-        am1 = (-tmp + tmp2).toom4Sqr()
-        tmp = z0 + z6
-        tmp2 = a2.mulInt(3)
-        tmp3 = am2.mulInt(5)
-        z5 = tmp.mulInt(90) - amhalf.mulInt(2) + tmp2 - tmp3 - a1.mulInt(20) + am1.mulInt(60)
-        z5 = z5.divInt(180)
-        z1 =  -amhalf.mulInt(8) - tmp2 - tmp3 + a1.mulInt(40) + am1.mulInt(120)
-        z1 = z1.divInt(180) + tmp.mulInt(2)
+        am1 = (tmp2.dsub(tmp)).toom4Sqr()
+        tmp = x2.dmulInt(2)
+        tmp = tmp.dsub(x3)
+        tmp3 = x1.dmulInt(4)
+        tmp = tmp.dsub(tmp3)
+        tmp3 = x0.dmulInt(8)
+        tmp = tmp.dadd(tmp3)
+        amhalf = tmp.toom4Sqr()
+        tmp = z0 + result
         tmp2 = a1 + am1
+        tmp3 = am2.mulInt(5)
+        tmp4 = a2.mulInt(3)
+        z5 = tmp.mulInt(90)
+        tmp5 = amhalf.mulInt(2)
+        z5 = z5.dsub(tmp5)
+        tmp5 = tmp4 - tmp3
+        z5 = z5.dadd(tmp5)
+        tmp5 = a1.mulInt(20)
+        z5 = z5.dsub(tmp5)
+        tmp5 = am1.mulInt(60)
+        z5 = z5.dadd(tmp5)
+        z5 = z5.divInt(180)
+        z1 = -amhalf.mulInt(8)
+        tmp5 = tmp4 + tmp3
+        z1 = z1.dsub(tmp5)
+        tmp5 = a1.mulInt(40)
+        z1 = z1.dadd(tmp5)
+        tmp5 = am1.mulInt(120)
+        z1 = z1.dadd(tmp5)
+        z1 = z1.ddivInt(180)
+        tmp5 = tmp.mulInt(2)
+        z1 = z1.dadd(tmp5)
         tmp3 = a2 + am2
-        z4 = tmp3 - tmp2.mulInt(4) + z0.mulInt(6)
-        z4 = z4.divInt(24) - z6.mulInt(5)
-        z3 = -(tmp.mulInt(45)) + amhalf + am2 + a1.mulInt(7) - am1.mulInt(27)
-        z3 = z3.divInt(18)
-        z2 = -tmp3 + tmp2.mulInt(16) - z0.mulInt(30)
-        z2 = z2.divInt(24) + z6.mulInt(4)
-        z6.limbs.insert(newSeq[int64](6 * a), 0)
-        if z5.limbs != @[0'i64]:
-            z5.limbs.insert(newSeq[int64](5 * a), 0)
-        if z4.limbs != @[0'i64]:
-            z4.limbs.insert(newSeq[int64](4 * a), 0)
-        if z3.limbs != @[0'i64]:
-            z3.limbs.insert(newSeq[int64](3 * a), 0)
-        if z2.limbs != @[0'i64]:
-            z2.limbs.insert(newSeq[int64](2 * a), 0)
-        if z1.limbs != @[0'i64]:
-            z1.limbs.insert(newSeq[int64](a), 0)
-        result = z0 + z1 + z2 + z3 + z4 + z5 + z6
+        tmp5 = tmp2.mulInt(4)
+        z4 = tmp3 - tmp5
+        tmp5 = z0.mulInt(6)
+        z4 = z4.dadd(tmp5)
+        tmp5 = result.mulInt(5)
+        z4 = z4.ddivInt(24)
+        z4 = z4.dsub(tmp5)
+        tmp = tmp.dmulInt(45)
+        z3 = amhalf.dsub(tmp)
+        z3 = z3.dadd(am2)
+        tmp = a1.dmulInt(7)
+        z3 = z3.dadd(tmp)
+        tmp = am1.dmulInt(27)
+        z3 = z3.dsub(tmp)
+        z3 = z3.ddivInt(18)
+        tmp = z0.mulInt(30)
+        z2 = tmp2.dmulInt(16)
+        z2 = z2.dsub(tmp3)
+        z2 = z2.dsub(tmp)
+        tmp = result.mulInt(4)
+        z2 = z2.ddivInt(24)
+        z2 = z2.dadd(tmp)
+        result.limbs.insert(zeros, 0)
+        result = result.udadd(z5)
+        result.limbs.insert(zeros, 0)
+        result = result.udadd(z4)
+        result.limbs.insert(zeros, 0)
+        result = result.udadd(z3)
+        result.limbs.insert(zeros, 0)
+        result = result.udadd(z2)
+        result.limbs.insert(zeros, 0)
+        result = result.udadd(z1)
+        result.limbs.insert(zeros, 0)
+        result = result.udadd(z0)
         result.sign = true
 
 # Multiplication. Used algorithms are changed with limbs length.
@@ -730,39 +961,37 @@ proc `*` *(x, y: BigInt): BigInt =
     var 
         m: int = len(x.limbs)
         n: int = len(y.limbs)
-        y2: BigInt
     if n > m:
         result = y * x
-    elif n < KARATSUBA_THRESHOLD:
-        if x == y:
+    elif x == y:
+        if n < KARATSUBA_THRESHOLD:
             result = x.schoolbookSqr()
-        else:
-            result = x.schoolbookMul(y)
-    elif n < TOOM3_THRESHOLD:
-        if x == y:
+        elif n < TOOM3_THRESHOLD:
             result = x.karatsubaSqr()
-        elif n == m:
-            result = x.karatsubaMul(y)
-        else:
-            y2 = BigInt(sign: y.sign, limbs: concat(repeat(0'i64, (m - n)), y.limbs))
-            result = x.karatsubaMul(y2)
-            result.limbs.delete(0,(m - n - 1))
-    elif n < TOOM4_THRESHOLD:
-        if x == y:
+        elif n < TOOM4_THRESHOLD:
             result = x.toom3Sqr()
-        elif n == m:
+        else:
+            result = x.toom4Sqr()
+    elif n == m:
+        if n < KARATSUBA_THRESHOLD:
+            result = x.schoolbookMul(y)
+        elif n < TOOM3_THRESHOLD:
+            result = x.karatsubaMul(y)
+        elif n < TOOM4_THRESHOLD:
             result = x.toom3Mul(y)
         else:
-            y2 = BigInt(sign: y.sign, limbs: concat(repeat(0'i64, (m - n)), y.limbs))
+            result = x.toom4Mul(y)
+    else:
+        var y2: BigInt = BigInt(sign: y.sign, limbs: concat(repeat(0'i64, (m - n)), y.limbs))
+        if n < KARATSUBA_THRESHOLD:
+            result = x.schoolbookMul(y)
+        elif n < TOOM3_THRESHOLD:
+            result = x.karatsubaMul(y2)
+            result.limbs.delete(0,(m - n - 1))
+        elif n < TOOM4_THRESHOLD:
             result = x.toom3Mul(y2)
             result.limbs.delete(0,(m - n - 1))
-    else:
-        if x == y:
-            result = x.toom4Sqr()
-        elif n == m:
-            result = x.toom4Mul(y)
         else:
-            y2 = BigInt(sign: y.sign, limbs: concat(repeat(0'i64, (m - n)), y.limbs))
             result = x.toom4Mul(y2)
             result.limbs.delete(0,(m - n - 1))
             
@@ -848,7 +1077,7 @@ proc setPrec*(prec: int) =
 proc getPrec*(): int =
     result = bfContext.prec
 
-proc truncate*(x: BigFloat): BigFloat =
+proc truncate(x: BigFloat): BigFloat =
     var 
         m: int = (bfContext.prec.toFloat / LOG_BASE.toFloat).ceil.toInt + 2
         n: int = len(x.intPart.limbs) - m 
@@ -1001,15 +1230,13 @@ proc `+` *(x, y: BigFloat): BigFloat =
         result = y + x
     else:
         var
-            n: int
             a: int
             b: int
             x2: BigInt
             y2: BigInt
             tmp: string
             zeros: seq[int64]
-        n = bfContext.prec
-        if x.exp - y.exp > n:
+        if x.exp - y.exp > bfContext.prec:
             result = x
         else:
             a = x.exp - LOG_BASE * (len(x.intPart.limbs) - 1) - len($(x.intPart.limbs[^1])) + 1
@@ -1107,12 +1334,12 @@ proc inv(x: BigFloat): BigFloat =
         two: BigFloat
         x2: BigFloat
         t: int = (bfContext.prec * 51) div 100
-        prec_list: seq[int] = @[t]
+        precList: seq[int] = @[t]
         precOrig: int = bfContext.prec
     while t >= 16:
         t = t div 2
-        prec_list.add(t)
-    prec_list.reverse
+        precList.add(t)
+    precList.reverse
     setPrec(16)
     y = x.truncate()
     ystring = $y.intPart
@@ -1129,8 +1356,8 @@ proc inv(x: BigFloat): BigFloat =
     two = newBigFloat("2")
     for i in 0..3:
         result = result + result * (one - x2 * result)
-    for i in 0..(len(prec_list) - 1):
-        t = prec_list[i] + 16
+    for i in 0..(len(precList) - 1):
+        t = precList[i] + 16
         setPrec(t)
         result = result.truncate()
         result = result + result * (one - x.truncate() * result)
@@ -1170,14 +1397,14 @@ proc sqrt*(x: BigFloat): BigFloat =
         one: BigFloat
         half: BigFloat
         t: int = (bfContext.prec * 51) div 100
-        prec_list: seq[int] = @[t]
+        precList: seq[int] = @[t]
         precOrig: int = bfContext.prec
     if not x.intPart.sign:
         raise newException(ValueError, "Negative value for sqrt is not supported.")
     while t >= 16:
         t = t div 2
-        prec_list.add(t)
-    prec_list.reverse
+        precList.add(t)
+    precList.reverse
     setPrec(16)
     y = x.truncate()
     one = newBigFloat("1")
@@ -1187,8 +1414,8 @@ proc sqrt*(x: BigFloat): BigFloat =
     for i in 0..12:
         result = (result * half) + (y * half * result.inv())
     result = result.inv()
-    for i in 0..(len(prec_list) - 1):
-        t = prec_list[i] + 16
+    for i in 0..(len(precList) - 1):
+        t = precList[i] + 16
         setPrec(t)
         result = result.truncate()
         result = result + (result * ((one - (x.truncate() * (result * result))) * half))

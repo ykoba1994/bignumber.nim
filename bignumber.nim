@@ -21,7 +21,7 @@ const
     KARATSUBA_THRESHOLD: int = 43
     TOOM3_THRESHOLD: int = 350
     TOOM4_THRESHOLD: int = 820 # Toom-Cook 4 algorithm is used only for squaring
-    TOOM65_THRESHOLD: int = 800
+    TOOM6H_THRESHOLD: int = 800
     validCharsForBigInt: string = "01234567890"
     validCharsForBigFloat: string = ".0123456789"
     
@@ -959,12 +959,12 @@ proc toom4Sqr(x: BigInt): BigInt =
         result = result.udadd(z0)
         result.sign = true
 
-proc toom65Mul2(x, y: BigInt): BigInt = 
+proc toom6hMul(x, y: BigInt): BigInt = 
     var
         m: int = len(x.limbs)
         n: int = len(y.limbs)
         a: int = min(m, n) div 6
-    if (m < TOOM65_THRESHOLD) or (n < TOOM65_THRESHOLD):
+    if (m < TOOM6H_THRESHOLD) or (n < TOOM6H_THRESHOLD):
         result = x.toom3Mul(y)
     else:
         var
@@ -1022,7 +1022,7 @@ proc toom65Mul2(x, y: BigInt): BigInt =
         y2.removeLeadingZeros()
         y3.removeLeadingZeros()
         y4.removeLeadingZeros()
-        z0 = x0.toom65Mul2(y0)
+        z0 = x0.toom6hMul(y0)
         #tmp = x5.mulInt(3) + x3.mulInt(27) + x1.mulInt(243)
         tmp = x5.mulInt(3)
         tmp11 = x3.mulInt(27)
@@ -1045,8 +1045,8 @@ proc toom65Mul2(x, y: BigInt): BigInt =
         tmp4 = tmp4.dadd(tmp11)
         tmp11 = y0.mulInt(243)
         tmp4 = tmp4.dadd(tmp11)
-        b = (tmp + tmp2).toom65Mul2(tmp3 + tmp4)
-        c = (tmp2.dsub(tmp)).toom65Mul2(tmp4.dsub(tmp3))
+        b = (tmp + tmp2).toom6hMul(tmp3 + tmp4)
+        c = (tmp2.dsub(tmp)).toom6hMul(tmp4.dsub(tmp3))
         #tmp = x5.mulInt(243) + x3.mulInt(27) + x1.mulInt(3)
         tmp = x5.mulInt(243)
         tmp11 = x3.mulInt(27)
@@ -1067,8 +1067,8 @@ proc toom65Mul2(x, y: BigInt): BigInt =
         tmp4 = y4.mulInt(81)
         tmp11 = y2.mulInt(9) + y0
         tmp4 = tmp4.dadd(tmp11)
-        d = (tmp + tmp2).toom65Mul2(tmp3 + tmp4)
-        e = (tmp2.dsub(tmp)).toom65Mul2(tmp4.dsub(tmp3))
+        d = (tmp + tmp2).toom6hMul(tmp3 + tmp4)
+        e = (tmp2.dsub(tmp)).toom6hMul(tmp4.dsub(tmp3))
         tmp = x5.mulInt(2)
         tmp11 = x3.mulInt(8)
         tmp = tmp.dadd(tmp11)
@@ -1090,8 +1090,8 @@ proc toom65Mul2(x, y: BigInt): BigInt =
         tmp4 = tmp4.dadd(tmp11)
         tmp11 = y0.mulInt(32)
         tmp4 = tmp4.dadd(tmp11)
-        f = (tmp2 + tmp).toom65Mul2(tmp4 + tmp3)
-        g = (tmp2.dsub(tmp)).toom65Mul2(tmp4.dsub(tmp3))
+        f = (tmp2 + tmp).toom6hMul(tmp4 + tmp3)
+        g = (tmp2.dsub(tmp)).toom6hMul(tmp4.dsub(tmp3))
         #tmp = x5.mulInt(32) + x3.mulInt(8) + x1.mulInt(2)
         tmp = x5.mulInt(32)
         tmp11 = x3.mulInt(8)
@@ -1112,8 +1112,8 @@ proc toom65Mul2(x, y: BigInt): BigInt =
         tmp4 = y4.mulInt(16) + y0
         tmp11 = y2.mulInt(4)
         tmp4 = tmp4.dadd(tmp11)
-        h = (tmp2 + tmp).toom65Mul2(tmp4 + tmp3)
-        i = (tmp2.dsub(tmp)).toom65Mul2(tmp4.dsub(tmp3))
+        h = (tmp2 + tmp).toom6hMul(tmp4 + tmp3)
+        i = (tmp2.dsub(tmp)).toom6hMul(tmp4.dsub(tmp3))
         tmp = x5.dadd(x3)
         tmp = tmp.dadd(x1)
         tmp2 = x4.dadd(x2)
@@ -1134,8 +1134,8 @@ proc toom65Mul2(x, y: BigInt): BigInt =
         y2 = zero
         y1 = zero
         y0 = zero
-        j = (tmp2 + tmp).toom65Mul2(tmp4 + tmp3)
-        k = (tmp2.dsub(tmp)).toom65Mul2(tmp4.dsub(tmp3))
+        j = (tmp2 + tmp).toom6hMul(tmp4 + tmp3)
+        k = (tmp2.dsub(tmp)).toom6hMul(tmp4.dsub(tmp3))
         tmp = j + k
         tmp = tmp.dmulInt(50)
         tmp2 = j.dsub(k)
@@ -1342,7 +1342,7 @@ proc toom65Sqr2(x: BigInt): BigInt =
     var
         m: int = len(x.limbs)
         a: int = m div 6
-    if m < TOOM65_THRESHOLD:
+    if m < TOOM6H_THRESHOLD:
         result = x.toom4Sqr()
     else:
         var
@@ -1412,8 +1412,8 @@ proc toom65Sqr2(x: BigInt): BigInt =
         tmp4 = tmp4.dadd(tmp11)
         tmp11 = x0.mulInt(243)
         tmp4 = tmp4.dadd(tmp11)
-        b = (tmp + tmp2).toom65Mul2(tmp3 + tmp4)
-        c = (tmp2.dsub(tmp)).toom65Mul2(tmp4.dsub(tmp3))
+        b = (tmp + tmp2).toom6hMul(tmp3 + tmp4)
+        c = (tmp2.dsub(tmp)).toom6hMul(tmp4.dsub(tmp3))
         #tmp = x5.mulInt(243) + x3.mulInt(27) + x1.mulInt(3)
         tmp = x5.mulInt(243)
         tmp11 = x3.mulInt(27)
@@ -1447,8 +1447,8 @@ proc toom65Sqr2(x: BigInt): BigInt =
         tmp4 = tmp4.dadd(tmp11)
         tmp11 = x0.mulInt(32)
         tmp4 = tmp4.dadd(tmp11)
-        f = (tmp2 + tmp).toom65Mul2(tmp4 + tmp3)
-        g = (tmp2.dsub(tmp)).toom65Mul2(tmp4.dsub(tmp3))
+        f = (tmp2 + tmp).toom6hMul(tmp4 + tmp3)
+        g = (tmp2.dsub(tmp)).toom6hMul(tmp4.dsub(tmp3))
         #tmp = x5.mulInt(32) + x3.mulInt(8) + x1.mulInt(2)
         tmp = x5.mulInt(32)
         tmp11 = x3.mulInt(8)
@@ -1654,7 +1654,7 @@ proc `*` *(x, y: BigInt): BigInt =
             result = x.karatsubaSqr()
         elif n < TOOM4_THRESHOLD:
             result = x.toom3Sqr()
-        elif n < TOOM65_THRESHOLD * 100:
+        elif n < TOOM6H_THRESHOLD * 100:
             result = x.toom4Sqr()
         else:
             result = x.toom65Sqr2()
@@ -1663,10 +1663,10 @@ proc `*` *(x, y: BigInt): BigInt =
             result = x.schoolbookMul(y)
         elif n < TOOM3_THRESHOLD:
             result = x.karatsubaMul(y)
-        elif n < TOOM65_THRESHOLD:
+        elif n < TOOM6H_THRESHOLD:
             result = x.toom3Mul(y)
         else:
-            result = x.toom65Mul2(y)
+            result = x.toom6hMul(y)
     else:
         var y2: BigInt = BigInt(sign: y.sign, limbs: concat(repeat(0'i64, (m - n)), y.limbs))
         if n < KARATSUBA_THRESHOLD:
@@ -1674,11 +1674,11 @@ proc `*` *(x, y: BigInt): BigInt =
         elif n < TOOM3_THRESHOLD:
             result = x.karatsubaMul(y2)
             result.limbs.delete(0,(m - n - 1))
-        elif n < TOOM65_THRESHOLD:
+        elif n < TOOM6H_THRESHOLD:
             result = x.toom3Mul(y2)
             result.limbs.delete(0,(m - n - 1))
         else:
-            result = x.toom65Mul2(y2)
+            result = x.toom6hMul(y2)
             result.limbs.delete(0,(m - n - 1))
             
 proc `*` *(x: BigInt, y: SomeInteger): BigInt =

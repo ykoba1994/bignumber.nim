@@ -42,14 +42,14 @@ proc calcPi(): BigFloat =
     result = num / den
 
 let digits: int = paramStr(1).parseInt()
-setPrec(digits)
+setPrec(digits+32)
 echo "This program might take much time for large digits. Press ctrl + C to quit."
 var fileName: string = "pi"
 fileName.add($digits)
 fileName.add("digits.txt")
 var f: File = open(fileName, FileMode.fmWrite)
 let t1: float = cpuTime()
-f.writeLine $calcPi()
+f.writeLine ($calcPi())[0..digits+1]
 let t2: float = cpuTime()
 echo "Finished! Result is written in " & fileName & "."
 echo "Elapsed time is " & $(t2 - t1) & " seconds."

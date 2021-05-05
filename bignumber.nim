@@ -19,8 +19,9 @@ const
     BASE2: int64 = 100000000
     LOG_BASE: int = 16
     KARATSUBA_THRESHOLD: int = 43
-    TOOM3_THRESHOLD: int = 180
-    TOOM4_THRESHOLD: int = 870
+    TOOM3_THRESHOLD: int = 350
+    TOOM4_THRESHOLD: int = 820 # Toom-Cook 4 algorithm is used only for squaring
+    TOOM65_THRESHOLD: int = 800
     validCharsForBigInt: string = "01234567890"
     validCharsForBigFloat: string = ".0123456789"
     
@@ -241,7 +242,7 @@ proc uadd(x, y: BigInt): BigInt =
         else:
             break
     result.removeLeadingZeros()
-
+   
 # Unsigned subtraction. Only works when x >= y >= 0.
 proc usub(x, y: BigInt): BigInt =
     var 
@@ -464,19 +465,23 @@ proc karatsubaMul(x, y: BigInt): BigInt =
             x1: BigInt = BigInt(sign: true, limbs: x.limbs[a..(m - 1)])
             y0: BigInt = BigInt(sign: true, limbs: y.limbs[0..(a - 1)])
             y1: BigInt = BigInt(sign: true, limbs: y.limbs[a..(n - 1)])
-            z1: BigInt
+            #z1: BigInt
             z0: BigInt       
-            tmp: BigInt  
+            #tmp: BigInt  
             zeros: seq[int64] = newSeq[int64](a)
         x0.removeLeadingZeros()
         y0.removeLeadingZeros()
         result = x1.karatsubaMul(y1)
         z0 = x0.karatsubaMul(y0)
+        #[tmp = (x1.dsub(x0)).karatsubaMul(y1.dsub(y0))
         z1 = result + z0
-        tmp = (x1.dsub(x0)).karatsubaMul(y1.dsub(y0))
-        z1 = z1.dsub(tmp)
+        z1 = z1.dsub(tmp)]#
+        x0 = (x1.dsub(x0)).karatsubaMul(y1.dsub(y0))
+        x1 = result + z0
+        x1 = x1.dsub(x0)
         result.limbs.insert(zeros, 0)
-        result = result.udadd(z1)
+        #result = result.udadd(z1)
+        result = result.udadd(x1)
         result.limbs.insert(zeros, 0)
         result = result.udadd(z0)
         result.sign = (x.sign == y.sign)
@@ -708,7 +713,7 @@ proc toom3Sqr(x: BigInt): BigInt =
 
 # Toom Cook 4 multiplication. Time complexity is O(n^1.404).
 # Evaluation points are infinity, 1, -1, 2, -2, -1/2 and 0.
-proc toom4Mul(x, y: BigInt): BigInt = 
+#[proc toom4Mul(x, y: BigInt): BigInt = 
     var
         m: int = len(x.limbs)
         n: int = len(y.limbs)
@@ -838,8 +843,8 @@ proc toom4Mul(x, y: BigInt): BigInt =
         result = result.udadd(z1)
         result.limbs.insert(zeros, 0)
         result = result.udadd(z0)
-        result.sign = (x.sign == y.sign)
-
+        result.sign = (x.sign == y.sign)]#
+        
 # Toom Cook 4 squaring.
 # Evaluation points are infinity, 1, -1, 2, -2, -1/2 and 0.
 proc toom4Sqr(x: BigInt): BigInt = 
@@ -954,6 +959,685 @@ proc toom4Sqr(x: BigInt): BigInt =
         result = result.udadd(z0)
         result.sign = true
 
+proc toom65Mul2(x, y: BigInt): BigInt = 
+    var
+        m: int = len(x.limbs)
+        n: int = len(y.limbs)
+        a: int = min(m, n) div 6
+    if (m < TOOM65_THRESHOLD) or (n < TOOM65_THRESHOLD):
+        result = x.toom3Mul(y)
+    else:
+        var
+            x0: BigInt = BigInt(sign: true, limbs: x.limbs[0..(a - 1)])
+            x1: BigInt = BigInt(sign: true, limbs: x.limbs[a..(2 * a - 1)])
+            x2: BigInt = BigInt(sign: true, limbs: x.limbs[(2 * a)..(3 * a - 1)])
+            x3: BigInt = BigInt(sign: true, limbs: x.limbs[(3 * a)..(4 * a - 1)])
+            x4: BigInt = BigInt(sign: true, limbs: x.limbs[(4 * a)..(5 * a - 1)])
+            x5: BigInt = BigInt(sign: true, limbs: x.limbs[(5 * a)..(m - 1)])
+            y0: BigInt = BigInt(sign: true, limbs: y.limbs[0..(a - 1)])
+            y1: BigInt = BigInt(sign: true, limbs: y.limbs[a..(2 * a - 1)])
+            y2: BigInt = BigInt(sign: true, limbs: y.limbs[(2 * a)..(3 * a - 1)])
+            y3: BigInt = BigInt(sign: true, limbs: y.limbs[(3 * a)..(4 * a - 1)])
+            y4: BigInt = BigInt(sign: true, limbs: y.limbs[(4 * a)..(5 * a - 1)])
+            y5: BigInt = BigInt(sign: true, limbs: y.limbs[(5 * a)..(n - 1)])
+            b: BigInt
+            c: BigInt
+            d: BigInt
+            e: BigInt
+            f: BigInt
+            g: BigInt
+            h: BigInt
+            i: BigInt
+            j: BigInt
+            k: BigInt
+            tmp: BigInt
+            tmp2: BigInt
+            tmp3: BigInt
+            tmp4: BigInt
+            tmp5: BigInt
+            tmp6: BigInt
+            tmp7: BigInt
+            tmp8: BigInt
+            tmp9: BigInt
+            tmp10: BigInt
+            tmp11: BigInt
+            z9: BigInt
+            z8: BigInt
+            z7: BigInt
+            z6: BigInt
+            z5: BigInt
+            z4: BigInt
+            z3: BigInt
+            z2: BigInt
+            z1: BigInt
+            z0: BigInt         
+            zeros: seq[int64] = newSeq[int64](a)  
+        x0.removeLeadingZeros()
+        x1.removeLeadingZeros()
+        x2.removeLeadingZeros()
+        x3.removeLeadingZeros()
+        x4.removeLeadingZeros()
+        y0.removeLeadingZeros()
+        y1.removeLeadingZeros()
+        y2.removeLeadingZeros()
+        y3.removeLeadingZeros()
+        y4.removeLeadingZeros()
+        z0 = x0.toom65Mul2(y0)
+        #tmp = x5.mulInt(3) + x3.mulInt(27) + x1.mulInt(243)
+        tmp = x5.mulInt(3)
+        tmp11 = x3.mulInt(27)
+        tmp = tmp.dadd(tmp11)
+        tmp11 = x1.mulInt(243)
+        tmp = tmp.dadd(tmp11)
+        #tmp2 = x4.mulInt(9) + x2.mulInt(81) + x0.mulInt(729)
+        tmp2 = x4.mulInt(9)
+        tmp11 = x2.mulInt(81)
+        tmp2 = tmp2.dadd(tmp11)
+        tmp11 = x0.mulInt(729)
+        tmp2 = tmp2.dadd(tmp11)
+        #tmp3 = y5 + y3.mulInt(9) + y1.mulInt(81)
+        tmp3 = y5 + y3.mulInt(9)
+        tmp11 = y1.mulInt(81)
+        tmp3 = tmp3.dadd(tmp11)
+        #tmp4 = y4.mulInt(3) + y2.mulInt(27) + y0.mulInt(243)
+        tmp4 = y4.mulInt(3)
+        tmp11 = y2.mulInt(27)
+        tmp4 = tmp4.dadd(tmp11)
+        tmp11 = y0.mulInt(243)
+        tmp4 = tmp4.dadd(tmp11)
+        b = (tmp + tmp2).toom65Mul2(tmp3 + tmp4)
+        c = (tmp2.dsub(tmp)).toom65Mul2(tmp4.dsub(tmp3))
+        #tmp = x5.mulInt(243) + x3.mulInt(27) + x1.mulInt(3)
+        tmp = x5.mulInt(243)
+        tmp11 = x3.mulInt(27)
+        tmp = tmp.dadd(tmp11)
+        tmp11 = x1.mulInt(3)
+        tmp = tmp.dadd(tmp11)
+        #tmp2 = x4.mulInt(81) + x2.mulInt(9) + x0
+        tmp2 = x4.mulInt(81)
+        tmp11 = x2.mulInt(9) + x0
+        tmp2 = tmp2.dadd(tmp11)
+        #tmp3 = y5.mulInt(243) + y3.mulInt(27) + y1.mulInt(3)
+        tmp3 = y5.mulInt(243)
+        tmp11 = y3.mulInt(27)
+        tmp3 = tmp3.dadd(tmp11)
+        tmp11 = y1.mulInt(3)
+        tmp3 = tmp3.dadd(tmp11)
+        #tmp4 = y4.mulInt(81) + y2.mulInt(9) + y0
+        tmp4 = y4.mulInt(81)
+        tmp11 = y2.mulInt(9) + y0
+        tmp4 = tmp4.dadd(tmp11)
+        d = (tmp + tmp2).toom65Mul2(tmp3 + tmp4)
+        e = (tmp2.dsub(tmp)).toom65Mul2(tmp4.dsub(tmp3))
+        tmp = x5.mulInt(2)
+        tmp11 = x3.mulInt(8)
+        tmp = tmp.dadd(tmp11)
+        tmp11 = x1.mulInt(32)
+        tmp = tmp.dadd(tmp11)
+        #tmp2 = x4.mulInt(4) + x2.mulInt(16) + x0.mulInt(64)
+        tmp2 = x4.mulInt(4)
+        tmp11 = x2.mulInt(16)
+        tmp2 = tmp2.dadd(tmp11)
+        tmp11 = x0.mulInt(64)
+        tmp2 = tmp2.dadd(tmp11)
+        #tmp3 = y5 + y3.mulInt(4) + y1.mulInt(16)
+        tmp3 = y5 + y3.mulInt(4)
+        tmp11 = y1.mulInt(16)
+        tmp3 = tmp3.dadd(tmp11)
+        #tmp4 = y4.mulInt(2) + y2.mulInt(8) + y0.mulInt(32)
+        tmp4 = y4.mulInt(2)
+        tmp11 = y2.mulInt(8)
+        tmp4 = tmp4.dadd(tmp11)
+        tmp11 = y0.mulInt(32)
+        tmp4 = tmp4.dadd(tmp11)
+        f = (tmp2 + tmp).toom65Mul2(tmp4 + tmp3)
+        g = (tmp2.dsub(tmp)).toom65Mul2(tmp4.dsub(tmp3))
+        #tmp = x5.mulInt(32) + x3.mulInt(8) + x1.mulInt(2)
+        tmp = x5.mulInt(32)
+        tmp11 = x3.mulInt(8)
+        tmp = tmp.dadd(tmp11)
+        tmp11 = x1.mulInt(2)
+        tmp = tmp.dadd(tmp11)
+        #tmp2 = x4.mulInt(16) + x2.mulInt(4) + x0
+        tmp2 = x4.mulInt(16) + x0
+        tmp11 = x2.mulInt(4)
+        tmp2 = tmp2.dadd(tmp11)
+        #tmp3 = y5.mulInt(32) + y3.mulInt(8) + y1.mulInt(2)
+        tmp3 = y5.mulInt(32)
+        tmp11 = y3.mulInt(8)
+        tmp3 = tmp3.dadd(tmp11)
+        tmp11 = y1.mulInt(2)
+        tmp3 = tmp3.dadd(tmp11)
+        #tmp4 = y4.mulInt(16) + y2.mulInt(4) + y0
+        tmp4 = y4.mulInt(16) + y0
+        tmp11 = y2.mulInt(4)
+        tmp4 = tmp4.dadd(tmp11)
+        h = (tmp2 + tmp).toom65Mul2(tmp4 + tmp3)
+        i = (tmp2.dsub(tmp)).toom65Mul2(tmp4.dsub(tmp3))
+        tmp = x5.dadd(x3)
+        tmp = tmp.dadd(x1)
+        tmp2 = x4.dadd(x2)
+        tmp2 = tmp2.dadd(x0)
+        tmp3 = y5.dadd(y3)
+        tmp3 = tmp3.dadd(y1)
+        tmp4 = y4.dadd(y2)
+        tmp4 = tmp4.dadd(y0)
+        x5 = zero
+        x4 = zero
+        x3 = zero
+        x2 = zero
+        x1 = zero
+        x0 = zero
+        y5 = zero
+        y4 = zero
+        y3 = zero
+        y2 = zero
+        y1 = zero
+        y0 = zero
+        j = (tmp2 + tmp).toom65Mul2(tmp4 + tmp3)
+        k = (tmp2.dsub(tmp)).toom65Mul2(tmp4.dsub(tmp3))
+        tmp = j + k
+        tmp = tmp.dmulInt(50)
+        tmp2 = j.dsub(k)
+        tmp2 = tmp2.dmulInt(50)
+        tmp3 = h + i
+        tmp3 = tmp3.dmulInt(8)
+        tmp4 = h.dsub(i)
+        tmp4 = tmp4.dmulInt(16)
+        tmp5 = f + g
+        tmp5 = tmp5.dmulInt(16)
+        tmp6 = f.dsub(g)
+        tmp6 = tmp6.dmulInt(8) 
+        tmp7 = d + e
+        tmp8 = d.dsub(e)
+        tmp9 = b + c
+        tmp10 = b.dsub(c)
+        b = zero
+        c = zero
+        d = zero
+        e = zero
+        f = zero
+        g = zero
+        h = zero
+        i = zero
+        j = zero
+        k = zero
+        #result = tmp.mulInt(105) - tmp3.mulInt(12) - tmp5.mulInt(3) + tmp7.mulInt(3) + tmp9
+        result = tmp.mulInt(105)
+        tmp11 = tmp3.mulInt(12)
+        result = result.dsub(tmp11)
+        tmp11 = tmp5.mulInt(3)
+        result = result.dsub(tmp11)
+        tmp11 = tmp7.mulInt(3) + tmp9
+        result = result.dadd(tmp11)
+        result = result.ddivInt(480)
+        result = result.ddivInt(350) - z0
+        #z9 = tmp2.mulInt(315) - tmp4.mulInt(36) - tmp6.mulInt(9) + tmp8.mulInt(27) + tmp10
+        z9 = tmp2.mulInt(315)
+        tmp11 = tmp4.mulInt(36)
+        z9 = z9.dsub(tmp11)
+        tmp11 = tmp6.mulInt(9)
+        z9 = z9.dsub(tmp11)
+        tmp11 = tmp8.mulInt(27) + tmp10
+        z9 = z9.dadd(tmp11)
+        z9 = z9.ddivInt(875)
+        z9 = z9.ddivInt(576)
+        #z5 = tmp2.mulInt(733) - tmp4.mulInt(26) - tmp6.mulInt(26) + tmp8.mulInt(9) + tmp10.mulInt(3)
+        z5 = tmp2.mulInt(733)
+        tmp11 = tmp4 + tmp6
+        tmp11 = tmp11.dmulInt(26)
+        z5 = z5.dsub(tmp11)
+        tmp11 = tmp8.mulInt(9)
+        z5 = z5.dadd(tmp11)
+        tmp11 = tmp10.mulInt(3)
+        z5 = z5.dadd(tmp11)
+        z5 = z5.ddivInt(288)
+        z5 = z5.ddivInt(100)
+        #z1 = tmp2.mulInt(105) - tmp4.mulInt(3) - tmp6.mulInt(12) + tmp8 + tmp10.mulInt(3)
+        z1 = tmp2.mulInt(105)
+        tmp11 = tmp4.mulInt(3)
+        z1 = z1.dsub(tmp11)
+        tmp11 = tmp6.mulInt(12)
+        z1 = z1.dsub(tmp11)
+        tmp11 = tmp8 + tmp10.mulInt(3)
+        z1 = z1.dadd(tmp11)
+        z1 = z1.ddivInt(480)
+        z1 = z1.ddivInt(350)
+        tmp2.dneg()
+        tmp2 = tmp2.dmulInt(35)
+        tmp2 = tmp2.dmulInt(481)
+        tmp4 = tmp4.dmulInt(2)
+        tmp6 = tmp6.dmulInt(2)
+        #z7 = tmp2 + tmp4.mulInt(746) + tmp6.mulInt(254) - tmp8.mulInt(579) - tmp10.mulInt(57)
+        z7 = tmp2 + tmp4.mulInt(746)
+        tmp11 = tmp6.mulInt(254)
+        z7 = z7.dadd(tmp11)
+        tmp11 = tmp8.mulInt(579)
+        z7 = z7.dsub(tmp11)
+        tmp11 = tmp10.mulInt(57)
+        z7 = z7.dsub(tmp11)
+        z7 = z7.ddivInt(768)
+        z7 = z7.ddivInt(525)
+        z7 = z7.ddivInt(5)
+        #z3 = tmp2 + tmp4.mulInt(254) + tmp6.mulInt(746) - tmp8.mulInt(171) - tmp10.mulInt(193)
+        tmp11 = tmp4.dmulInt(254)
+        z3 = tmp2.dadd(tmp11)
+        tmp11 = tmp6.dmulInt(746)
+        z3 = z3.dadd(tmp11)
+        tmp11 = tmp8.dmulInt(171)
+        z3 = z3.dsub(tmp11)
+        tmp11 = tmp10.dmulInt(193)
+        z3 = z3.dsub(tmp11)
+        z3 = z3.ddivInt(768)
+        z3 = z3.ddivInt(525)
+        z3 = z3.ddivInt(5)
+        tmp2 = zero
+        tmp4 = zero
+        tmp6 = zero
+        tmp8 = zero
+        tmp10 = zero
+        tmp5 = tmp5.dmulInt(2)
+        #z2 = -z0.mulInt(400).mulInt(35).mulInt(517) + tmp.mulInt(315) - tmp3.mulInt(9) - tmp5.mulInt(18) + tmp7 + tmp9.mulInt(27)
+        z2 = -z0.mulInt(400)
+        z2 = z2.dmulInt(35)
+        z2 = z2.dmulInt(517)
+        tmp11 = tmp.mulInt(315)
+        z2 = z2.dadd(tmp11)
+        tmp11 = tmp3.mulInt(9)
+        z2 = z2.dsub(tmp11)
+        tmp11 = tmp5.mulInt(18)
+        z2 = z2.dsub(tmp11)
+        tmp11 = tmp7 + tmp9.mulInt(27)
+        z2 = z2.dadd(tmp11)
+        z2 = z2.ddivInt(875)
+        z2 = z2.ddivInt(576)
+        tmp3 = tmp3.dmulInt(2)
+        #z6 = -z0.mulInt(160).mulInt(649).mulInt(15) + tmp.mulInt(733) - tmp3.mulInt(13) - tmp5.mulInt(13) + tmp7.mulInt(3) + tmp9.mulInt(9)
+        z6 = -z0.mulInt(160)
+        z6 = z6.dmulInt(649)
+        z6 = z6.dmulInt(15)
+        tmp11 = tmp.mulInt(733)
+        z6 = z6.dadd(tmp11)
+        tmp11 = tmp3 + tmp5
+        tmp11 = tmp11.dmulInt(13)
+        z6 = z6.dsub(tmp11)
+        tmp11 = tmp7.mulInt(3)
+        z6 = z6.dadd(tmp11)
+        tmp11 = tmp9.mulInt(9)
+        z6 = z6.dadd(tmp11)
+        z6 = z6.ddivInt(288)
+        z6 = z6.ddivInt(100)
+        tmp = tmp.dmulInt(35)
+        tmp = tmp.dmulInt(481)
+        #z8 = z0.mulInt(320).mulInt(175).mulInt(517) - tmp + tmp3.mulInt(746) + tmp5.mulInt(254) - tmp7.mulInt(193) - tmp9.mulInt(171)
+        z8 = z0.mulInt(320)
+        z8 = z8.dmulInt(175)
+        z8 = z8.dmulInt(517)
+        tmp11 = tmp3.mulInt(746) - tmp
+        z8 = z8.dadd(tmp11)
+        tmp11 = tmp5.mulInt(254)
+        z8 = z8.dadd(tmp11)
+        tmp11 = tmp7.mulInt(193)
+        z8 = z8.dsub(tmp11)
+        tmp11 = tmp9.mulInt(171)
+        z8 = z8.dsub(tmp11)
+        z8 = z8.ddivInt(768)
+        z8 = z8.ddivInt(525)
+        z8 = z8.ddivInt(5)
+        #z4 = z0.mulInt(480).mulInt(350).mulInt(649) - tmp + tmp3.mulInt(254) + tmp5.mulInt(746) - tmp7.mulInt(57) - tmp9.mulInt(579)
+        z4 = z0.mulInt(480)
+        z4 = z4.dmulInt(350)
+        z4 = z4.dmulInt(649)
+        z4 = z4.dsub(tmp)
+        tmp11 = tmp3.dmulInt(254)
+        z4 = z4.dadd(tmp11)
+        tmp11 = tmp5.dmulInt(746) 
+        z4 = z4.dadd(tmp11)
+        tmp11 = tmp7.dmulInt(57)
+        z4 = z4.dsub(tmp11)
+        tmp11 = tmp9.dmulInt(579)
+        z4 = z4.dsub(tmp11)
+        z4 = z4.ddivInt(768)
+        z4 = z4.ddivInt(525)
+        z4 = z4.ddivInt(5)
+        tmp = zero
+        tmp3 = zero
+        tmp5 = zero
+        tmp7 = zero
+        tmp9 = zero
+        tmp11 = zero
+        result.limbs.insert(zeros, 0)
+        result = result.udadd(z9)
+        z9 = zero
+        result.limbs.insert(zeros, 0)
+        result = result.udadd(z8)
+        z8 = zero
+        result.limbs.insert(zeros, 0)
+        result = result.udadd(z7)
+        z7 = zero
+        result.limbs.insert(zeros, 0)
+        result = result.udadd(z6)
+        z6 = zero
+        result.limbs.insert(zeros, 0)
+        result = result.udadd(z5)
+        z5 = zero
+        result.limbs.insert(zeros, 0)
+        result = result.udadd(z4)
+        z4 = zero
+        result.limbs.insert(zeros, 0)
+        result = result.udadd(z3)
+        z3 = zero
+        result.limbs.insert(zeros, 0)
+        result = result.udadd(z2)
+        z2 = zero
+        result.limbs.insert(zeros, 0)
+        result = result.udadd(z1)
+        z1 = zero
+        result.limbs.insert(zeros, 0)
+        result = result.udadd(z0)
+        z0 = zero
+        result.sign = (x.sign == y.sign)
+
+proc toom65Sqr2(x: BigInt): BigInt = 
+    var
+        m: int = len(x.limbs)
+        a: int = m div 6
+    if m < TOOM65_THRESHOLD:
+        result = x.toom4Sqr()
+    else:
+        var
+            x0: BigInt = BigInt(sign: true, limbs: x.limbs[0..(a - 1)])
+            x1: BigInt = BigInt(sign: true, limbs: x.limbs[a..(2 * a - 1)])
+            x2: BigInt = BigInt(sign: true, limbs: x.limbs[(2 * a)..(3 * a - 1)])
+            x3: BigInt = BigInt(sign: true, limbs: x.limbs[(3 * a)..(4 * a - 1)])
+            x4: BigInt = BigInt(sign: true, limbs: x.limbs[(4 * a)..(5 * a - 1)])
+            x5: BigInt = BigInt(sign: true, limbs: x.limbs[(5 * a)..(m - 1)])
+            b: BigInt
+            c: BigInt
+            d: BigInt
+            e: BigInt
+            f: BigInt
+            g: BigInt
+            h: BigInt
+            i: BigInt
+            j: BigInt
+            k: BigInt
+            tmp: BigInt
+            tmp2: BigInt
+            tmp3: BigInt
+            tmp4: BigInt
+            tmp5: BigInt
+            tmp6: BigInt
+            tmp7: BigInt
+            tmp8: BigInt
+            tmp9: BigInt
+            tmp10: BigInt
+            tmp11: BigInt
+            z9: BigInt
+            z8: BigInt
+            z7: BigInt
+            z6: BigInt
+            z5: BigInt
+            z4: BigInt
+            z3: BigInt
+            z2: BigInt
+            z1: BigInt
+            z0: BigInt         
+            zeros: seq[int64] = newSeq[int64](a)  
+        x0.removeLeadingZeros()
+        x1.removeLeadingZeros()
+        x2.removeLeadingZeros()
+        x3.removeLeadingZeros()
+        x4.removeLeadingZeros()
+        z0 = x0.toom65Sqr2()
+        #tmp = x5.mulInt(3) + x3.mulInt(27) + x1.mulInt(243)
+        tmp = x5.mulInt(3)
+        tmp11 = x3.mulInt(27)
+        tmp = tmp.dadd(tmp11)
+        tmp11 = x1.mulInt(243)
+        tmp = tmp.dadd(tmp11)
+        #tmp2 = x4.mulInt(9) + x2.mulInt(81) + x0.mulInt(729)
+        tmp2 = x4.mulInt(9)
+        tmp11 = x2.mulInt(81)
+        tmp2 = tmp2.dadd(tmp11)
+        tmp11 = x0.mulInt(729)
+        tmp2 = tmp2.dadd(tmp11)
+        #tmp3 = y5 + y3.mulInt(9) + y1.mulInt(81)
+        tmp3 = x5 + x3.mulInt(9)
+        tmp11 = x1.mulInt(81)
+        tmp3 = tmp3.dadd(tmp11)
+        #tmp4 = y4.mulInt(3) + y2.mulInt(27) + y0.mulInt(243)
+        tmp4 = x4.mulInt(3)
+        tmp11 = x2.mulInt(27)
+        tmp4 = tmp4.dadd(tmp11)
+        tmp11 = x0.mulInt(243)
+        tmp4 = tmp4.dadd(tmp11)
+        b = (tmp + tmp2).toom65Mul2(tmp3 + tmp4)
+        c = (tmp2.dsub(tmp)).toom65Mul2(tmp4.dsub(tmp3))
+        #tmp = x5.mulInt(243) + x3.mulInt(27) + x1.mulInt(3)
+        tmp = x5.mulInt(243)
+        tmp11 = x3.mulInt(27)
+        tmp = tmp.dadd(tmp11)
+        tmp11 = x1.mulInt(3)
+        tmp = tmp.dadd(tmp11)
+        #tmp2 = x4.mulInt(81) + x2.mulInt(9) + x0
+        tmp2 = x4.mulInt(81)
+        tmp11 = x2.mulInt(9) + x0
+        tmp2 = tmp2.dadd(tmp11)
+        d = (tmp + tmp2).toom65Sqr2()
+        e = (tmp2.dsub(tmp)).toom65Sqr2()
+        tmp = x5.mulInt(2)
+        tmp11 = x3.mulInt(8)
+        tmp = tmp.dadd(tmp11)
+        tmp11 = x1.mulInt(32)
+        tmp = tmp.dadd(tmp11)
+        #tmp2 = x4.mulInt(4) + x2.mulInt(16) + x0.mulInt(64)
+        tmp2 = x4.mulInt(4)
+        tmp11 = x2.mulInt(16)
+        tmp2 = tmp2.dadd(tmp11)
+        tmp11 = x0.mulInt(64)
+        tmp2 = tmp2.dadd(tmp11)
+        #tmp3 = y5 + y3.mulInt(4) + y1.mulInt(16)
+        tmp3 = x5 + x3.mulInt(4)
+        tmp11 = x1.mulInt(16)
+        tmp3 = tmp3.dadd(tmp11)
+        #tmp4 = y4.mulInt(2) + y2.mulInt(8) + y0.mulInt(32)
+        tmp4 = x4.mulInt(2)
+        tmp11 = x2.mulInt(8)
+        tmp4 = tmp4.dadd(tmp11)
+        tmp11 = x0.mulInt(32)
+        tmp4 = tmp4.dadd(tmp11)
+        f = (tmp2 + tmp).toom65Mul2(tmp4 + tmp3)
+        g = (tmp2.dsub(tmp)).toom65Mul2(tmp4.dsub(tmp3))
+        #tmp = x5.mulInt(32) + x3.mulInt(8) + x1.mulInt(2)
+        tmp = x5.mulInt(32)
+        tmp11 = x3.mulInt(8)
+        tmp = tmp.dadd(tmp11)
+        tmp11 = x1.mulInt(2)
+        tmp = tmp.dadd(tmp11)
+        #tmp2 = x4.mulInt(16) + x2.mulInt(4) + x0
+        tmp2 = x4.mulInt(16) + x0
+        tmp11 = x2.mulInt(4)
+        tmp2 = tmp2.dadd(tmp11)
+        h = (tmp2 + tmp).toom65Sqr2()
+        i = (tmp2.dsub(tmp)).toom65Sqr2()
+        tmp = x5.dadd(x3)
+        tmp = tmp.dadd(x1)
+        tmp2 = x4.dadd(x2)
+        tmp2 = tmp2.dadd(x0)
+        j = (tmp2 + tmp).toom65Sqr2()
+        k = (tmp2.dsub(tmp)).toom65Sqr2()
+        tmp = j + k
+        tmp = tmp.dmulInt(50)
+        tmp2 = j.dsub(k)
+        tmp2 = tmp2.dmulInt(50)
+        tmp3 = h + i
+        tmp3 = tmp3.dmulInt(8)
+        tmp4 = h.dsub(i)
+        tmp4 = tmp4.dmulInt(16)
+        tmp5 = f + g
+        tmp5 = tmp5.dmulInt(16)
+        tmp6 = f.dsub(g)
+        tmp6 = tmp6.dmulInt(8)
+        tmp7 = d + e
+        tmp8 = d.dsub(e)
+        tmp9 = b + c
+        tmp10 = b.dsub(c)
+        #result = tmp.mulInt(105) - tmp3.mulInt(12) - tmp5.mulInt(3) + tmp7.mulInt(3) + tmp9
+        result = tmp.mulInt(105)
+        tmp11 = tmp3.mulInt(12)
+        result = result.dsub(tmp11)
+        tmp11 = tmp5.mulInt(3)
+        result = result.dsub(tmp11)
+        tmp11 = tmp7.mulInt(3) + tmp9
+        result = result.dadd(tmp11)
+        result = result.ddivInt(480)
+        result = result.ddivInt(350) - z0
+        #z9 = tmp2.mulInt(315) - tmp4.mulInt(36) - tmp6.mulInt(9) + tmp8.mulInt(27) + tmp10
+        z9 = tmp2.mulInt(315)
+        tmp11 = tmp4.mulInt(36)
+        z9 = z9.dsub(tmp11)
+        tmp11 = tmp6.mulInt(9)
+        z9 = z9.dsub(tmp11)
+        tmp11 = tmp8.mulInt(27) + tmp10
+        z9 = z9.dadd(tmp11)
+        z9 = z9.ddivInt(875)
+        z9 = z9.ddivInt(576)
+        #z5 = tmp2.mulInt(733) - tmp4.mulInt(26) - tmp6.mulInt(26) + tmp8.mulInt(9) + tmp10.mulInt(3)
+        z5 = tmp2.mulInt(733)
+        tmp11 = tmp4 + tmp6
+        tmp11 = tmp11.dmulInt(26)
+        z5 = z5.dsub(tmp11)
+        tmp11 = tmp8.mulInt(9)
+        z5 = z5.dadd(tmp11)
+        tmp11 = tmp10.mulInt(3)
+        z5 = z5.dadd(tmp11)
+        z5 = z5.ddivInt(288)
+        z5 = z5.ddivInt(100)
+        #z1 = tmp2.mulInt(105) - tmp4.mulInt(3) - tmp6.mulInt(12) + tmp8 + tmp10.mulInt(3)
+        z1 = tmp2.mulInt(105)
+        tmp11 = tmp4.mulInt(3)
+        z1 = z1.dsub(tmp11)
+        tmp11 = tmp6.mulInt(12)
+        z1 = z1.dsub(tmp11)
+        tmp11 = tmp8 + tmp10.mulInt(3)
+        z1 = z1.dadd(tmp11)
+        z1 = z1.ddivInt(480)
+        z1 = z1.ddivInt(350)
+        tmp2.dneg()
+        tmp2 = tmp2.dmulInt(35)
+        tmp2 = tmp2.dmulInt(481)
+        tmp4 = tmp4.dmulInt(2)
+        tmp6 = tmp6.dmulInt(2)
+        #z7 = tmp2 + tmp4.mulInt(746) + tmp6.mulInt(254) - tmp8.mulInt(579) - tmp10.mulInt(57)
+        z7 = tmp2 + tmp4.mulInt(746)
+        tmp11 = tmp6.mulInt(254)
+        z7 = z7.dadd(tmp11)
+        tmp11 = tmp8.mulInt(579)
+        z7 = z7.dsub(tmp11)
+        tmp11 = tmp10.mulInt(57)
+        z7 = z7.dsub(tmp11)
+        z7 = z7.ddivInt(768)
+        z7 = z7.ddivInt(525)
+        z7 = z7.ddivInt(5)
+        #z3 = tmp2 + tmp4.mulInt(254) + tmp6.mulInt(746) - tmp8.mulInt(171) - tmp10.mulInt(193)
+        tmp11 = tmp4.dmulInt(254)
+        z3 = tmp2.dadd(tmp11)
+        tmp11 = tmp6.dmulInt(746)
+        z3 = z3.dadd(tmp11)
+        tmp11 = tmp8.dmulInt(171)
+        z3 = z3.dsub(tmp11)
+        tmp11 = tmp10.dmulInt(193)
+        z3 = z3.dsub(tmp11)
+        z3 = z3.ddivInt(768)
+        z3 = z3.ddivInt(525)
+        z3 = z3.ddivInt(5)
+        tmp5 = tmp5.dmulInt(2)
+        #z2 = -z0.mulInt(400).mulInt(35).mulInt(517) + tmp.mulInt(315) - tmp3.mulInt(9) - tmp5.mulInt(18) + tmp7 + tmp9.mulInt(27)
+        z2 = -z0.mulInt(400)
+        z2 = z2.dmulInt(35)
+        z2 = z2.dmulInt(517)
+        tmp11 = tmp.mulInt(315)
+        z2 = z2.dadd(tmp11)
+        tmp11 = tmp3.mulInt(9)
+        z2 = z2.dsub(tmp11)
+        tmp11 = tmp5.mulInt(18)
+        z2 = z2.dsub(tmp11)
+        tmp11 = tmp7 + tmp9.mulInt(27)
+        z2 = z2.dadd(tmp11)
+        z2 = z2.ddivInt(875)
+        z2 = z2.ddivInt(576)
+        tmp3 = tmp3.dmulInt(2)
+        #z6 = -z0.mulInt(160).mulInt(649).mulInt(15) + tmp.mulInt(733) - tmp3.mulInt(13) - tmp5.mulInt(13) + tmp7.mulInt(3) + tmp9.mulInt(9)
+        z6 = -z0.mulInt(160)
+        z6 = z6.dmulInt(649)
+        z6 = z6.dmulInt(15)
+        tmp11 = tmp.mulInt(733)
+        z6 = z6.dadd(tmp11)
+        tmp11 = tmp3 + tmp5
+        tmp11 = tmp11.dmulInt(13)
+        z6 = z6.dsub(tmp11)
+        tmp11 = tmp7.mulInt(3)
+        z6 = z6.dadd(tmp11)
+        tmp11 = tmp9.mulInt(9)
+        z6 = z6.dadd(tmp11)
+        z6 = z6.ddivInt(288)
+        z6 = z6.ddivInt(100)
+        tmp = tmp.dmulInt(35)
+        tmp = tmp.dmulInt(481)
+        #z8 = z0.mulInt(320).mulInt(175).mulInt(517) - tmp + tmp3.mulInt(746) + tmp5.mulInt(254) - tmp7.mulInt(193) - tmp9.mulInt(171)
+        z8 = z0.mulInt(320)
+        z8 = z8.dmulInt(175)
+        z8 = z8.dmulInt(517)
+        tmp11 = tmp3.mulInt(746) - tmp
+        z8 = z8.dadd(tmp11)
+        tmp11 = tmp5.mulInt(254)
+        z8 = z8.dadd(tmp11)
+        tmp11 = tmp7.mulInt(193)
+        z8 = z8.dsub(tmp11)
+        tmp11 = tmp9.mulInt(171)
+        z8 = z8.dsub(tmp11)
+        z8 = z8.ddivInt(768)
+        z8 = z8.ddivInt(525)
+        z8 = z8.ddivInt(5)
+        #z4 = z0.mulInt(480).mulInt(350).mulInt(649) - tmp + tmp3.mulInt(254) + tmp5.mulInt(746) - tmp7.mulInt(57) - tmp9.mulInt(579)
+        z4 = z0.mulInt(480)
+        z4 = z4.dmulInt(350)
+        z4 = z4.dmulInt(649)
+        z4 = z4.dsub(tmp)
+        tmp11 = tmp3.dmulInt(254)
+        z4 = z4.dadd(tmp11)
+        tmp11 = tmp5.dmulInt(746) 
+        z4 = z4.dadd(tmp11)
+        tmp11 = tmp7.dmulInt(57)
+        z4 = z4.dsub(tmp11)
+        tmp11 = tmp9.dmulInt(579)
+        z4 = z4.dsub(tmp11)
+        z4 = z4.ddivInt(768)
+        z4 = z4.ddivInt(525)
+        z4 = z4.ddivInt(5)
+        result.limbs.insert(zeros, 0)
+        result = result.udadd(z9)
+        result.limbs.insert(zeros, 0)
+        result = result.udadd(z8)
+        result.limbs.insert(zeros, 0)
+        result = result.udadd(z7)
+        result.limbs.insert(zeros, 0)
+        result = result.udadd(z6)
+        result.limbs.insert(zeros, 0)
+        result = result.udadd(z5)
+        result.limbs.insert(zeros, 0)
+        result = result.udadd(z4)
+        result.limbs.insert(zeros, 0)
+        result = result.udadd(z3)
+        result.limbs.insert(zeros, 0)
+        result = result.udadd(z2)
+        result.limbs.insert(zeros, 0)
+        result = result.udadd(z1)
+        result.limbs.insert(zeros, 0)
+        result = result.udadd(z0)
+        result.sign = true
+
 # Multiplication. Used algorithms are changed with limbs length.
 # Karatsuba and Toom Cook multiplication are slow when the sizes of two operands are different, 
 # so filling zeros to smaller value.        
@@ -970,17 +1654,19 @@ proc `*` *(x, y: BigInt): BigInt =
             result = x.karatsubaSqr()
         elif n < TOOM4_THRESHOLD:
             result = x.toom3Sqr()
-        else:
+        elif n < TOOM65_THRESHOLD * 100:
             result = x.toom4Sqr()
+        else:
+            result = x.toom65Sqr2()
     elif n == m:
         if n < KARATSUBA_THRESHOLD:
             result = x.schoolbookMul(y)
         elif n < TOOM3_THRESHOLD:
             result = x.karatsubaMul(y)
-        elif n < TOOM4_THRESHOLD:
+        elif n < TOOM65_THRESHOLD:
             result = x.toom3Mul(y)
         else:
-            result = x.toom4Mul(y)
+            result = x.toom65Mul2(y)
     else:
         var y2: BigInt = BigInt(sign: y.sign, limbs: concat(repeat(0'i64, (m - n)), y.limbs))
         if n < KARATSUBA_THRESHOLD:
@@ -988,11 +1674,11 @@ proc `*` *(x, y: BigInt): BigInt =
         elif n < TOOM3_THRESHOLD:
             result = x.karatsubaMul(y2)
             result.limbs.delete(0,(m - n - 1))
-        elif n < TOOM4_THRESHOLD:
+        elif n < TOOM65_THRESHOLD:
             result = x.toom3Mul(y2)
             result.limbs.delete(0,(m - n - 1))
         else:
-            result = x.toom4Mul(y2)
+            result = x.toom65Mul2(y2)
             result.limbs.delete(0,(m - n - 1))
             
 proc `*` *(x: BigInt, y: SomeInteger): BigInt =
@@ -1333,7 +2019,7 @@ proc inv(x: BigFloat): BigFloat =
         one: BigFloat
         two: BigFloat
         x2: BigFloat
-        t: int = (bfContext.prec * 51) div 100
+        t: int = (bfContext.prec * 53) div 100
         precList: seq[int] = @[t]
         precOrig: int = bfContext.prec
     while t >= 16:
@@ -1396,7 +2082,7 @@ proc sqrt*(x: BigFloat): BigFloat =
         y: BigFloat
         one: BigFloat
         half: BigFloat
-        t: int = (bfContext.prec * 51) div 100
+        t: int = (bfContext.prec * 53) div 100
         precList: seq[int] = @[t]
         precOrig: int = bfContext.prec
     if not x.intPart.sign:
@@ -1525,3 +2211,4 @@ proc divmod*(x: BigInt, y: SomeInteger): seq[BigInt] =
 
 proc divmod*(x: SomeInteger, y: BigInt): seq[BigInt] =
     result = newBigInt(x).divmod(y)
+

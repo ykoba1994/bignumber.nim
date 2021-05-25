@@ -173,11 +173,6 @@ function main() {
     title="newBigFloat(a: SomeInteger): BigFloat">newBigFloat,<wbr>SomeInteger</a></li>
 
   </ul>
-  <ul class="simple nested-toc-section">truncate
-      <li><a class="reference" href="#truncate%2CBigFloat"
-    title="truncate(x: BigFloat): BigFloat">truncate,<wbr>BigFloat</a></li>
-
-  </ul>
   <ul class="simple nested-toc-section">/
       <li><a class="reference" href="#%2F%2CBigFloat%2CBigFloat"
     title="`/`(x, y: BigFloat): BigFloat">/,<wbr>BigFloat,<wbr>BigFloat</a></li>
@@ -274,13 +269,6 @@ function main() {
     title="`-`[T: SomeInteger | BigInt](x: BigFloat; y: T): BigFloat">-,<wbr>BigFloat,<wbr>T</a></li>
   <li><a class="reference" href="#-%2CT%2CBigFloat"
     title="`-`[T: SomeInteger | BigInt](x: T; y: BigFloat): BigFloat">-,<wbr>T,<wbr>BigFloat</a></li>
-
-  </ul>
-  <ul class="simple nested-toc-section">toStr
-      <li><a class="reference" href="#toStr%2CBigInt"
-    title="toStr(x: BigInt): string">toStr,<wbr>BigInt</a></li>
-  <li><a class="reference" href="#toStr%2CBigFloat"
-    title="toStr(x: BigFloat): string">toStr,<wbr>BigFloat</a></li>
 
   </ul>
   <ul class="simple nested-toc-section">getPrec
@@ -425,42 +413,35 @@ function main() {
     <span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">ValueError</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
 <dd>
 
-
+Constructs a new BigInt object from a string.
 
 </dd>
 <a id="newBigInt,int64"></a>
 <dt><pre><span class="Keyword">proc</span> <a href="#newBigInt%2Cint64"><span class="Identifier">newBigInt</span></a><span class="Other">(</span><span class="Identifier">a</span><span class="Other">:</span> <span class="Identifier">int64</span><span class="Other">)</span><span class="Other">:</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
 <dd>
 
-
+Constructs a new BigInt object from int64.
 
 </dd>
 <a id="newBigInt,T"></a>
 <dt><pre><span class="Keyword">proc</span> <a href="#newBigInt%2CT"><span class="Identifier">newBigInt</span></a><span class="Other">[</span><span class="Identifier">T</span><span class="Other">:</span> <span class="Identifier">int8</span> <span class="Operator">|</span> <span class="Identifier">uint8</span> <span class="Operator">|</span> <span class="Identifier">int16</span> <span class="Operator">|</span> <span class="Identifier">uint16</span> <span class="Operator">|</span> <span class="Identifier">int32</span> <span class="Operator">|</span> <span class="Identifier">uint32</span> <span class="Operator">|</span> <span class="Identifier">int</span><span class="Other">]</span><span class="Other">(</span><span class="Identifier">a</span><span class="Other">:</span> <span class="Identifier">T</span><span class="Other">)</span><span class="Other">:</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a></pre></dt>
 <dd>
 
-
+Constructs a new BigInt object from int8|uint8|int16|uint16|int32|uint32|int.
 
 </dd>
 <a id="newBigInt,uint64"></a>
 <dt><pre><span class="Keyword">proc</span> <a href="#newBigInt%2Cuint64"><span class="Identifier">newBigInt</span></a><span class="Other">(</span><span class="Identifier">a</span><span class="Other">:</span> <span class="Identifier">uint64</span><span class="Other">)</span><span class="Other">:</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">ValueError</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
 <dd>
 
-
-
-</dd>
-<a id="toStr,BigInt"></a>
-<dt><pre><span class="Keyword">proc</span> <a href="#toStr%2CBigInt"><span class="Identifier">toStr</span></a><span class="Other">(</span><span class="Identifier">x</span><span class="Other">:</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">string</span> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
-<dd>
-
-
+Constructs a new BigInt object from uint64.
 
 </dd>
 <a id="$,BigInt"></a>
 <dt><pre><span class="Keyword">proc</span> <a href="#%24%2CBigInt"><span class="Identifier">`$`</span></a><span class="Other">(</span><span class="Identifier">x</span><span class="Other">:</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">string</span> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
 <dd>
 
-
+Converts a BigInt object to a string.
 
 </dd>
 <a id=">,BigInt,BigInt"></a>
@@ -509,14 +490,14 @@ function main() {
 <dt><pre><span class="Keyword">proc</span> <a href="#-%2CBigInt"><span class="Identifier">`-`</span></a><span class="Other">(</span><span class="Identifier">x</span><span class="Other">:</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a><span class="Other">)</span><span class="Other">:</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
 <dd>
 
-
+Negates x.
 
 </dd>
 <a id="abs,BigInt"></a>
 <dt><pre><span class="Keyword">proc</span> <a href="#abs%2CBigInt"><span class="Identifier">abs</span></a><span class="Other">(</span><span class="Identifier">x</span><span class="Other">:</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a><span class="Other">)</span><span class="Other">:</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
 <dd>
 
-
+Absolute value of x.
 
 </dd>
 <a id="max,BigInt,BigInt"></a>
@@ -537,119 +518,112 @@ function main() {
 <dt><pre><span class="Keyword">proc</span> <a href="#%2B%2CBigInt%2CBigInt"><span class="Identifier">`+`</span></a><span class="Other">(</span><span class="Identifier">x</span><span class="Other">,</span> <span class="Identifier">y</span><span class="Other">:</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a><span class="Other">)</span><span class="Other">:</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
 <dd>
 
-
+Returns the sum of two BigInts.
 
 </dd>
 <a id="+,BigInt,SomeInteger"></a>
 <dt><pre><span class="Keyword">proc</span> <a href="#%2B%2CBigInt%2CSomeInteger"><span class="Identifier">`+`</span></a><span class="Other">(</span><span class="Identifier">x</span><span class="Other">:</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a><span class="Other">;</span> <span class="Identifier">y</span><span class="Other">:</span> <span class="Identifier">SomeInteger</span><span class="Other">)</span><span class="Other">:</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a></pre></dt>
 <dd>
 
-
+Returns the sum of a BigInt and an integer.
 
 </dd>
 <a id="+,SomeInteger,BigInt"></a>
 <dt><pre><span class="Keyword">proc</span> <a href="#%2B%2CSomeInteger%2CBigInt"><span class="Identifier">`+`</span></a><span class="Other">(</span><span class="Identifier">x</span><span class="Other">:</span> <span class="Identifier">SomeInteger</span><span class="Other">;</span> <span class="Identifier">y</span><span class="Other">:</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a><span class="Other">)</span><span class="Other">:</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a></pre></dt>
 <dd>
 
-
+Returns the sum of an integer and a BigInt.
 
 </dd>
 <a id="-,BigInt,BigInt"></a>
 <dt><pre><span class="Keyword">proc</span> <a href="#-%2CBigInt%2CBigInt"><span class="Identifier">`-`</span></a><span class="Other">(</span><span class="Identifier">x</span><span class="Other">,</span> <span class="Identifier">y</span><span class="Other">:</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a><span class="Other">)</span><span class="Other">:</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
 <dd>
 
-
+Returns the difference of two BigInts.
 
 </dd>
 <a id="-,BigInt,SomeInteger"></a>
 <dt><pre><span class="Keyword">proc</span> <a href="#-%2CBigInt%2CSomeInteger"><span class="Identifier">`-`</span></a><span class="Other">(</span><span class="Identifier">x</span><span class="Other">:</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a><span class="Other">;</span> <span class="Identifier">y</span><span class="Other">:</span> <span class="Identifier">SomeInteger</span><span class="Other">)</span><span class="Other">:</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a></pre></dt>
 <dd>
 
-
+Returns the difference of a BigInt and an integer.
 
 </dd>
 <a id="-,SomeInteger,BigInt"></a>
 <dt><pre><span class="Keyword">proc</span> <a href="#-%2CSomeInteger%2CBigInt"><span class="Identifier">`-`</span></a><span class="Other">(</span><span class="Identifier">x</span><span class="Other">:</span> <span class="Identifier">SomeInteger</span><span class="Other">;</span> <span class="Identifier">y</span><span class="Other">:</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a><span class="Other">)</span><span class="Other">:</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a></pre></dt>
 <dd>
 
-
+Returns the difference of an integer and a BigInt.
 
 </dd>
 <a id="*,BigInt,BigInt"></a>
 <dt><pre><span class="Keyword">proc</span> <a href="#%2A%2CBigInt%2CBigInt"><span class="Identifier">`*`</span></a><span class="Other">(</span><span class="Identifier">x</span><span class="Other">,</span> <span class="Identifier">y</span><span class="Other">:</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a><span class="Other">)</span><span class="Other">:</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
 <dd>
 
-
+Returns the product of two BigInts.
 
 </dd>
 <a id="*,BigInt,SomeInteger"></a>
 <dt><pre><span class="Keyword">proc</span> <a href="#%2A%2CBigInt%2CSomeInteger"><span class="Identifier">`*`</span></a><span class="Other">(</span><span class="Identifier">x</span><span class="Other">:</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a><span class="Other">;</span> <span class="Identifier">y</span><span class="Other">:</span> <span class="Identifier">SomeInteger</span><span class="Other">)</span><span class="Other">:</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a></pre></dt>
 <dd>
 
-
+Returns the product of a BigInt and an integer.
 
 </dd>
 <a id="*,SomeInteger,BigInt"></a>
 <dt><pre><span class="Keyword">proc</span> <a href="#%2A%2CSomeInteger%2CBigInt"><span class="Identifier">`*`</span></a><span class="Other">(</span><span class="Identifier">x</span><span class="Other">:</span> <span class="Identifier">SomeInteger</span><span class="Other">;</span> <span class="Identifier">y</span><span class="Other">:</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a><span class="Other">)</span><span class="Other">:</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a></pre></dt>
 <dd>
 
-
+Returns the product of an integer and a BigInt.
 
 </dd>
 <a id="+=,BigInt,T"></a>
 <dt><pre><span class="Keyword">proc</span> <a href="#%2B%3D%2CBigInt%2CT"><span class="Identifier">`+=`</span></a><span class="Other">[</span><span class="Identifier">T</span><span class="Other">:</span> <span class="Identifier">SomeInteger</span> <span class="Operator">|</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a><span class="Other">]</span><span class="Other">(</span><span class="Identifier">x</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a><span class="Other">;</span> <span class="Identifier">y</span><span class="Other">:</span> <span class="Identifier">T</span><span class="Other">)</span></pre></dt>
 <dd>
 
-
+x is overwritten by x + y.
 
 </dd>
 <a id="-=,BigInt,T"></a>
 <dt><pre><span class="Keyword">proc</span> <a href="#-%3D%2CBigInt%2CT"><span class="Identifier">`-=`</span></a><span class="Other">[</span><span class="Identifier">T</span><span class="Other">:</span> <span class="Identifier">SomeInteger</span> <span class="Operator">|</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a><span class="Other">]</span><span class="Other">(</span><span class="Identifier">x</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a><span class="Other">;</span> <span class="Identifier">y</span><span class="Other">:</span> <span class="Identifier">T</span><span class="Other">)</span></pre></dt>
 <dd>
 
-
+x is overwritten by x - y.
 
 </dd>
 <a id="*=,BigInt,T"></a>
 <dt><pre><span class="Keyword">proc</span> <a href="#%2A%3D%2CBigInt%2CT"><span class="Identifier">`*=`</span></a><span class="Other">[</span><span class="Identifier">T</span><span class="Other">:</span> <span class="Identifier">SomeInteger</span> <span class="Operator">|</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a><span class="Other">]</span><span class="Other">(</span><span class="Identifier">x</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a><span class="Other">;</span> <span class="Identifier">y</span><span class="Other">:</span> <span class="Identifier">T</span><span class="Other">)</span></pre></dt>
 <dd>
 
-
+x is overwritten by x * y.
 
 </dd>
 <a id="^,BigInt,SomeInteger"></a>
 <dt><pre><span class="Keyword">proc</span> <a href="#%5E%2CBigInt%2CSomeInteger"><span class="Identifier">`^`</span></a><span class="Other">(</span><span class="Identifier">x</span><span class="Other">:</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a><span class="Other">;</span> <span class="Identifier">y</span><span class="Other">:</span> <span class="Identifier">SomeInteger</span><span class="Other">)</span><span class="Other">:</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a></pre></dt>
 <dd>
 
-
+Returns x to the yth power.
 
 </dd>
 <a id="^,BigInt,BigInt"></a>
 <dt><pre><span class="Keyword">proc</span> <a href="#%5E%2CBigInt%2CBigInt"><span class="Identifier">`^`</span></a><span class="Other">(</span><span class="Identifier">x</span><span class="Other">,</span> <span class="Identifier">y</span><span class="Other">:</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a><span class="Other">)</span><span class="Other">:</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">ValueError</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
 <dd>
 
-
+Returns x to the yth power.
 
 </dd>
 <a id="setPrec,int"></a>
 <dt><pre><span class="Keyword">proc</span> <a href="#setPrec%2Cint"><span class="Identifier">setPrec</span></a><span class="Other">(</span><span class="Identifier">prec</span><span class="Other">:</span> <span class="Identifier">int</span><span class="Other">)</span> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
 <dd>
 
-
+Set precision of BigFloat.
 
 </dd>
 <a id="getPrec"></a>
 <dt><pre><span class="Keyword">proc</span> <a href="#getPrec"><span class="Identifier">getPrec</span></a><span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">int</span> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
 <dd>
 
-
-
-</dd>
-<a id="truncate,BigFloat"></a>
-<dt><pre><span class="Keyword">proc</span> <a href="#truncate%2CBigFloat"><span class="Identifier">truncate</span></a><span class="Other">(</span><span class="Identifier">x</span><span class="Other">:</span> <a href="bignumber.html#BigFloat"><span class="Identifier">BigFloat</span></a><span class="Other">)</span><span class="Other">:</span> <a href="bignumber.html#BigFloat"><span class="Identifier">BigFloat</span></a> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
-<dd>
-
-
+Get current precision of BigFloat.
 
 </dd>
 <a id="newBigFloat,string,bool"></a>
@@ -657,112 +631,105 @@ function main() {
     <span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">ValueError</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
 <dd>
 
-
+Constructs a new BigFloat object from a string.
 
 </dd>
 <a id="newBigFloat,BigInt"></a>
 <dt><pre><span class="Keyword">proc</span> <a href="#newBigFloat%2CBigInt"><span class="Identifier">newBigFloat</span></a><span class="Other">(</span><span class="Identifier">a</span><span class="Other">:</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a><span class="Other">)</span><span class="Other">:</span> <a href="bignumber.html#BigFloat"><span class="Identifier">BigFloat</span></a> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
 <dd>
 
-
+Constructs a new BigFloat object from a BigInt.
 
 </dd>
 <a id="newBigFloat,SomeInteger"></a>
 <dt><pre><span class="Keyword">proc</span> <a href="#newBigFloat%2CSomeInteger"><span class="Identifier">newBigFloat</span></a><span class="Other">(</span><span class="Identifier">a</span><span class="Other">:</span> <span class="Identifier">SomeInteger</span><span class="Other">)</span><span class="Other">:</span> <a href="bignumber.html#BigFloat"><span class="Identifier">BigFloat</span></a></pre></dt>
 <dd>
 
-
-
-</dd>
-<a id="toStr,BigFloat"></a>
-<dt><pre><span class="Keyword">proc</span> <a href="#toStr%2CBigFloat"><span class="Identifier">toStr</span></a><span class="Other">(</span><span class="Identifier">x</span><span class="Other">:</span> <a href="bignumber.html#BigFloat"><span class="Identifier">BigFloat</span></a><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">string</span> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
-<dd>
-
-
+Constructs a new BigFloat object from an integer.
 
 </dd>
 <a id="$,BigFloat"></a>
 <dt><pre><span class="Keyword">proc</span> <a href="#%24%2CBigFloat"><span class="Identifier">`$`</span></a><span class="Other">(</span><span class="Identifier">x</span><span class="Other">:</span> <a href="bignumber.html#BigFloat"><span class="Identifier">BigFloat</span></a><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">string</span> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
 <dd>
 
-
+Converts a BigFloat to a string.
 
 </dd>
 <a id="-,BigFloat"></a>
 <dt><pre><span class="Keyword">proc</span> <a href="#-%2CBigFloat"><span class="Identifier">`-`</span></a><span class="Other">(</span><span class="Identifier">x</span><span class="Other">:</span> <a href="bignumber.html#BigFloat"><span class="Identifier">BigFloat</span></a><span class="Other">)</span><span class="Other">:</span> <a href="bignumber.html#BigFloat"><span class="Identifier">BigFloat</span></a> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
 <dd>
 
-
+Negates a BigFloat.
 
 </dd>
 <a id="abs,BigFloat"></a>
 <dt><pre><span class="Keyword">proc</span> <a href="#abs%2CBigFloat"><span class="Identifier">abs</span></a><span class="Other">(</span><span class="Identifier">x</span><span class="Other">:</span> <a href="bignumber.html#BigFloat"><span class="Identifier">BigFloat</span></a><span class="Other">)</span><span class="Other">:</span> <a href="bignumber.html#BigFloat"><span class="Identifier">BigFloat</span></a> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
 <dd>
 
-
+Absolute value of a BigFloat.
 
 </dd>
 <a id="+,BigFloat,BigFloat"></a>
 <dt><pre><span class="Keyword">proc</span> <a href="#%2B%2CBigFloat%2CBigFloat"><span class="Identifier">`+`</span></a><span class="Other">(</span><span class="Identifier">x</span><span class="Other">,</span> <span class="Identifier">y</span><span class="Other">:</span> <a href="bignumber.html#BigFloat"><span class="Identifier">BigFloat</span></a><span class="Other">)</span><span class="Other">:</span> <a href="bignumber.html#BigFloat"><span class="Identifier">BigFloat</span></a> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">ValueError</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
 <dd>
 
-
+Returns the sum of two BigFloats.
 
 </dd>
 <a id="+,BigFloat,T"></a>
 <dt><pre><span class="Keyword">proc</span> <a href="#%2B%2CBigFloat%2CT"><span class="Identifier">`+`</span></a><span class="Other">[</span><span class="Identifier">T</span><span class="Other">:</span> <span class="Identifier">SomeInteger</span> <span class="Operator">|</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a><span class="Other">]</span><span class="Other">(</span><span class="Identifier">x</span><span class="Other">:</span> <a href="bignumber.html#BigFloat"><span class="Identifier">BigFloat</span></a><span class="Other">;</span> <span class="Identifier">y</span><span class="Other">:</span> <span class="Identifier">T</span><span class="Other">)</span><span class="Other">:</span> <a href="bignumber.html#BigFloat"><span class="Identifier">BigFloat</span></a></pre></dt>
 <dd>
 
-
+Returns the sum of a BigFloat and a BigInt or an integer.
 
 </dd>
 <a id="+,T,BigFloat"></a>
 <dt><pre><span class="Keyword">proc</span> <a href="#%2B%2CT%2CBigFloat"><span class="Identifier">`+`</span></a><span class="Other">[</span><span class="Identifier">T</span><span class="Other">:</span> <span class="Identifier">SomeInteger</span> <span class="Operator">|</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a><span class="Other">]</span><span class="Other">(</span><span class="Identifier">x</span><span class="Other">:</span> <span class="Identifier">T</span><span class="Other">;</span> <span class="Identifier">y</span><span class="Other">:</span> <a href="bignumber.html#BigFloat"><span class="Identifier">BigFloat</span></a><span class="Other">)</span><span class="Other">:</span> <a href="bignumber.html#BigFloat"><span class="Identifier">BigFloat</span></a></pre></dt>
 <dd>
 
-
+Returns the sum of a BigInt or an integer and a BigFloat.
 
 </dd>
 <a id="-,BigFloat,BigFloat"></a>
 <dt><pre><span class="Keyword">proc</span> <a href="#-%2CBigFloat%2CBigFloat"><span class="Identifier">`-`</span></a><span class="Other">(</span><span class="Identifier">x</span><span class="Other">,</span> <span class="Identifier">y</span><span class="Other">:</span> <a href="bignumber.html#BigFloat"><span class="Identifier">BigFloat</span></a><span class="Other">)</span><span class="Other">:</span> <a href="bignumber.html#BigFloat"><span class="Identifier">BigFloat</span></a> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">ValueError</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
 <dd>
 
-
+Returns the difference of two BigFloat.
 
 </dd>
 <a id="-,BigFloat,T"></a>
 <dt><pre><span class="Keyword">proc</span> <a href="#-%2CBigFloat%2CT"><span class="Identifier">`-`</span></a><span class="Other">[</span><span class="Identifier">T</span><span class="Other">:</span> <span class="Identifier">SomeInteger</span> <span class="Operator">|</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a><span class="Other">]</span><span class="Other">(</span><span class="Identifier">x</span><span class="Other">:</span> <a href="bignumber.html#BigFloat"><span class="Identifier">BigFloat</span></a><span class="Other">;</span> <span class="Identifier">y</span><span class="Other">:</span> <span class="Identifier">T</span><span class="Other">)</span><span class="Other">:</span> <a href="bignumber.html#BigFloat"><span class="Identifier">BigFloat</span></a></pre></dt>
 <dd>
 
-
+Returns the difference of a BigFloat and a BigInt or an integer.
 
 </dd>
 <a id="-,T,BigFloat"></a>
 <dt><pre><span class="Keyword">proc</span> <a href="#-%2CT%2CBigFloat"><span class="Identifier">`-`</span></a><span class="Other">[</span><span class="Identifier">T</span><span class="Other">:</span> <span class="Identifier">SomeInteger</span> <span class="Operator">|</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a><span class="Other">]</span><span class="Other">(</span><span class="Identifier">x</span><span class="Other">:</span> <span class="Identifier">T</span><span class="Other">;</span> <span class="Identifier">y</span><span class="Other">:</span> <a href="bignumber.html#BigFloat"><span class="Identifier">BigFloat</span></a><span class="Other">)</span><span class="Other">:</span> <a href="bignumber.html#BigFloat"><span class="Identifier">BigFloat</span></a></pre></dt>
 <dd>
 
-
+Returns the difference of a BigInt or an integer and a BigFloat.
 
 </dd>
 <a id="*,BigFloat,BigFloat"></a>
 <dt><pre><span class="Keyword">proc</span> <a href="#%2A%2CBigFloat%2CBigFloat"><span class="Identifier">`*`</span></a><span class="Other">(</span><span class="Identifier">x</span><span class="Other">,</span> <span class="Identifier">y</span><span class="Other">:</span> <a href="bignumber.html#BigFloat"><span class="Identifier">BigFloat</span></a><span class="Other">)</span><span class="Other">:</span> <a href="bignumber.html#BigFloat"><span class="Identifier">BigFloat</span></a> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
 <dd>
 
-
+Returns the product of two BigFloats.
 
 </dd>
 <a id="*,BigFloat,T"></a>
 <dt><pre><span class="Keyword">proc</span> <a href="#%2A%2CBigFloat%2CT"><span class="Identifier">`*`</span></a><span class="Other">[</span><span class="Identifier">T</span><span class="Other">:</span> <span class="Identifier">SomeInteger</span> <span class="Operator">|</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a><span class="Other">]</span><span class="Other">(</span><span class="Identifier">x</span><span class="Other">:</span> <a href="bignumber.html#BigFloat"><span class="Identifier">BigFloat</span></a><span class="Other">;</span> <span class="Identifier">y</span><span class="Other">:</span> <span class="Identifier">T</span><span class="Other">)</span><span class="Other">:</span> <a href="bignumber.html#BigFloat"><span class="Identifier">BigFloat</span></a></pre></dt>
 <dd>
 
-
+Returns the product of a BigFloat and a BigInt or an integer.
 
 </dd>
 <a id="*,T,BigFloat"></a>
 <dt><pre><span class="Keyword">proc</span> <a href="#%2A%2CT%2CBigFloat"><span class="Identifier">`*`</span></a><span class="Other">[</span><span class="Identifier">T</span><span class="Other">:</span> <span class="Identifier">SomeInteger</span> <span class="Operator">|</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a><span class="Other">]</span><span class="Other">(</span><span class="Identifier">x</span><span class="Other">:</span> <span class="Identifier">T</span><span class="Other">;</span> <span class="Identifier">y</span><span class="Other">:</span> <a href="bignumber.html#BigFloat"><span class="Identifier">BigFloat</span></a><span class="Other">)</span><span class="Other">:</span> <a href="bignumber.html#BigFloat"><span class="Identifier">BigFloat</span></a></pre></dt>
 <dd>
 
-
+Returns the product of a BigInt or an integer and a BigFloat.
 
 </dd>
 <a id=">,BigFloat,BigFloat"></a>
@@ -818,140 +785,140 @@ function main() {
 <dt><pre><span class="Keyword">proc</span> <a href="#%2F%2CBigFloat%2CBigFloat"><span class="Identifier">`/`</span></a><span class="Other">(</span><span class="Identifier">x</span><span class="Other">,</span> <span class="Identifier">y</span><span class="Other">:</span> <a href="bignumber.html#BigFloat"><span class="Identifier">BigFloat</span></a><span class="Other">)</span><span class="Other">:</span> <a href="bignumber.html#BigFloat"><span class="Identifier">BigFloat</span></a> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">ValueError</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
 <dd>
 
-
+x divided by y.
 
 </dd>
 <a id="/,BigFloat,T"></a>
 <dt><pre><span class="Keyword">proc</span> <a href="#%2F%2CBigFloat%2CT"><span class="Identifier">`/`</span></a><span class="Other">[</span><span class="Identifier">T</span><span class="Other">:</span> <span class="Identifier">SomeInteger</span> <span class="Operator">|</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a><span class="Other">]</span><span class="Other">(</span><span class="Identifier">x</span><span class="Other">:</span> <a href="bignumber.html#BigFloat"><span class="Identifier">BigFloat</span></a><span class="Other">;</span> <span class="Identifier">y</span><span class="Other">:</span> <span class="Identifier">T</span><span class="Other">)</span><span class="Other">:</span> <a href="bignumber.html#BigFloat"><span class="Identifier">BigFloat</span></a></pre></dt>
 <dd>
 
-
+x divided by y.
 
 </dd>
 <a id="/,T,BigFloat"></a>
 <dt><pre><span class="Keyword">proc</span> <a href="#%2F%2CT%2CBigFloat"><span class="Identifier">`/`</span></a><span class="Other">[</span><span class="Identifier">T</span><span class="Other">:</span> <span class="Identifier">SomeInteger</span> <span class="Operator">|</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a><span class="Other">]</span><span class="Other">(</span><span class="Identifier">x</span><span class="Other">:</span> <span class="Identifier">T</span><span class="Other">;</span> <span class="Identifier">y</span><span class="Other">:</span> <a href="bignumber.html#BigFloat"><span class="Identifier">BigFloat</span></a><span class="Other">)</span><span class="Other">:</span> <a href="bignumber.html#BigFloat"><span class="Identifier">BigFloat</span></a></pre></dt>
 <dd>
 
-
+x divided by y.
 
 </dd>
 <a id="+=,BigFloat,T"></a>
 <dt><pre><span class="Keyword">proc</span> <a href="#%2B%3D%2CBigFloat%2CT"><span class="Identifier">`+=`</span></a><span class="Other">[</span><span class="Identifier">T</span><span class="Other">:</span> <a href="bignumber.html#BigFloat"><span class="Identifier">BigFloat</span></a> <span class="Operator">|</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a> <span class="Operator">|</span> <span class="Identifier">SomeInteger</span><span class="Other">]</span><span class="Other">(</span><span class="Identifier">x</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="bignumber.html#BigFloat"><span class="Identifier">BigFloat</span></a><span class="Other">;</span> <span class="Identifier">y</span><span class="Other">:</span> <span class="Identifier">T</span><span class="Other">)</span></pre></dt>
 <dd>
 
-
+x is overwritten by x + y
 
 </dd>
 <a id="-=,BigFloat,T"></a>
 <dt><pre><span class="Keyword">proc</span> <a href="#-%3D%2CBigFloat%2CT"><span class="Identifier">`-=`</span></a><span class="Other">[</span><span class="Identifier">T</span><span class="Other">:</span> <a href="bignumber.html#BigFloat"><span class="Identifier">BigFloat</span></a> <span class="Operator">|</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a> <span class="Operator">|</span> <span class="Identifier">SomeInteger</span><span class="Other">]</span><span class="Other">(</span><span class="Identifier">x</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="bignumber.html#BigFloat"><span class="Identifier">BigFloat</span></a><span class="Other">;</span> <span class="Identifier">y</span><span class="Other">:</span> <span class="Identifier">T</span><span class="Other">)</span></pre></dt>
 <dd>
 
-
+x is overwritten by x - y
 
 </dd>
 <a id="*=,BigFloat,T"></a>
 <dt><pre><span class="Keyword">proc</span> <a href="#%2A%3D%2CBigFloat%2CT"><span class="Identifier">`*=`</span></a><span class="Other">[</span><span class="Identifier">T</span><span class="Other">:</span> <a href="bignumber.html#BigFloat"><span class="Identifier">BigFloat</span></a> <span class="Operator">|</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a> <span class="Operator">|</span> <span class="Identifier">SomeInteger</span><span class="Other">]</span><span class="Other">(</span><span class="Identifier">x</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="bignumber.html#BigFloat"><span class="Identifier">BigFloat</span></a><span class="Other">;</span> <span class="Identifier">y</span><span class="Other">:</span> <span class="Identifier">T</span><span class="Other">)</span></pre></dt>
 <dd>
 
-
+x is overwritten by x * y
 
 </dd>
 <a id="/=,BigFloat,T"></a>
 <dt><pre><span class="Keyword">proc</span> <a href="#%2F%3D%2CBigFloat%2CT"><span class="Identifier">`/=`</span></a><span class="Other">[</span><span class="Identifier">T</span><span class="Other">:</span> <a href="bignumber.html#BigFloat"><span class="Identifier">BigFloat</span></a> <span class="Operator">|</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a> <span class="Operator">|</span> <span class="Identifier">SomeInteger</span><span class="Other">]</span><span class="Other">(</span><span class="Identifier">x</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="bignumber.html#BigFloat"><span class="Identifier">BigFloat</span></a><span class="Other">;</span> <span class="Identifier">y</span><span class="Other">:</span> <span class="Identifier">T</span><span class="Other">)</span></pre></dt>
 <dd>
 
-
+x is overwritten by x / y
 
 </dd>
 <a id="sqrt,BigFloat"></a>
 <dt><pre><span class="Keyword">proc</span> <a href="#sqrt%2CBigFloat"><span class="Identifier">sqrt</span></a><span class="Other">(</span><span class="Identifier">x</span><span class="Other">:</span> <a href="bignumber.html#BigFloat"><span class="Identifier">BigFloat</span></a><span class="Other">)</span><span class="Other">:</span> <a href="bignumber.html#BigFloat"><span class="Identifier">BigFloat</span></a> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">ValueError</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
 <dd>
 
-
+Square root of a BigFloat.
 
 </dd>
 <a id="sqrt,BigInt"></a>
 <dt><pre><span class="Keyword">proc</span> <a href="#sqrt%2CBigInt"><span class="Identifier">sqrt</span></a><span class="Other">(</span><span class="Identifier">x</span><span class="Other">:</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a><span class="Other">)</span><span class="Other">:</span> <a href="bignumber.html#BigFloat"><span class="Identifier">BigFloat</span></a> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">ValueError</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
 <dd>
 
-
+Returns square root of a BigInt as a BigFloat.
 
 </dd>
 <a id="^,BigFloat,SomeInteger"></a>
 <dt><pre><span class="Keyword">proc</span> <a href="#%5E%2CBigFloat%2CSomeInteger"><span class="Identifier">`^`</span></a><span class="Other">(</span><span class="Identifier">x</span><span class="Other">:</span> <a href="bignumber.html#BigFloat"><span class="Identifier">BigFloat</span></a><span class="Other">;</span> <span class="Identifier">y</span><span class="Other">:</span> <span class="Identifier">SomeInteger</span><span class="Other">)</span><span class="Other">:</span> <a href="bignumber.html#BigFloat"><span class="Identifier">BigFloat</span></a></pre></dt>
 <dd>
 
-
+Returns x to the yth power. Real number exponent is not supported. 
 
 </dd>
 <a id="^,BigFloat,BigInt"></a>
 <dt><pre><span class="Keyword">proc</span> <a href="#%5E%2CBigFloat%2CBigInt"><span class="Identifier">`^`</span></a><span class="Other">(</span><span class="Identifier">x</span><span class="Other">:</span> <a href="bignumber.html#BigFloat"><span class="Identifier">BigFloat</span></a><span class="Other">;</span> <span class="Identifier">y</span><span class="Other">:</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a><span class="Other">)</span><span class="Other">:</span> <a href="bignumber.html#BigFloat"><span class="Identifier">BigFloat</span></a> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">ValueError</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
 <dd>
 
-
+Returns x to the yth power. Real number exponent is not supported. 
 
 </dd>
 <a id="div,BigInt,BigInt"></a>
 <dt><pre><span class="Keyword">proc</span> <a href="#div%2CBigInt%2CBigInt"><span class="Identifier">`div`</span></a><span class="Other">(</span><span class="Identifier">x</span><span class="Other">,</span> <span class="Identifier">y</span><span class="Other">:</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a><span class="Other">)</span><span class="Other">:</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">ValueError</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
 <dd>
 
-
+Returns the quotient of x by y.
 
 </dd>
 <a id="div,BigInt,SomeInteger"></a>
 <dt><pre><span class="Keyword">proc</span> <a href="#div%2CBigInt%2CSomeInteger"><span class="Identifier">`div`</span></a><span class="Other">(</span><span class="Identifier">x</span><span class="Other">:</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a><span class="Other">;</span> <span class="Identifier">y</span><span class="Other">:</span> <span class="Identifier">SomeInteger</span><span class="Other">)</span><span class="Other">:</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a></pre></dt>
 <dd>
 
-
+Returns the quotient of x by y.
 
 </dd>
 <a id="div,SomeInteger,BigInt"></a>
 <dt><pre><span class="Keyword">proc</span> <a href="#div%2CSomeInteger%2CBigInt"><span class="Identifier">`div`</span></a><span class="Other">(</span><span class="Identifier">x</span><span class="Other">:</span> <span class="Identifier">SomeInteger</span><span class="Other">;</span> <span class="Identifier">y</span><span class="Other">:</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a><span class="Other">)</span><span class="Other">:</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a></pre></dt>
 <dd>
 
-
+Returns the quotient of x by y.
 
 </dd>
 <a id="mod,BigInt,BigInt"></a>
 <dt><pre><span class="Keyword">proc</span> <a href="#mod%2CBigInt%2CBigInt"><span class="Identifier">`mod`</span></a><span class="Other">(</span><span class="Identifier">x</span><span class="Other">,</span> <span class="Identifier">y</span><span class="Other">:</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a><span class="Other">)</span><span class="Other">:</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">ValueError</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
 <dd>
 
-
+Returns the remainder of x by y.
 
 </dd>
 <a id="mod,BigInt,SomeInteger"></a>
 <dt><pre><span class="Keyword">proc</span> <a href="#mod%2CBigInt%2CSomeInteger"><span class="Identifier">`mod`</span></a><span class="Other">(</span><span class="Identifier">x</span><span class="Other">:</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a><span class="Other">;</span> <span class="Identifier">y</span><span class="Other">:</span> <span class="Identifier">SomeInteger</span><span class="Other">)</span><span class="Other">:</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a></pre></dt>
 <dd>
 
-
+Returns the remainder of x by y.
 
 </dd>
 <a id="mod,SomeInteger,BigInt"></a>
 <dt><pre><span class="Keyword">proc</span> <a href="#mod%2CSomeInteger%2CBigInt"><span class="Identifier">`mod`</span></a><span class="Other">(</span><span class="Identifier">x</span><span class="Other">:</span> <span class="Identifier">SomeInteger</span><span class="Other">;</span> <span class="Identifier">y</span><span class="Other">:</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a><span class="Other">)</span><span class="Other">:</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a></pre></dt>
 <dd>
 
-
+Returns the remainder of x by y.
 
 </dd>
 <a id="divmod,BigInt,BigInt"></a>
 <dt><pre><span class="Keyword">proc</span> <a href="#divmod%2CBigInt%2CBigInt"><span class="Identifier">divmod</span></a><span class="Other">(</span><span class="Identifier">x</span><span class="Other">,</span> <span class="Identifier">y</span><span class="Other">:</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">seq</span><span class="Other">[</span><a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a><span class="Other">]</span> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">ValueError</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
 <dd>
 
-
+Returns the seq @[x div y, x mod y]
 
 </dd>
 <a id="divmod,BigInt,SomeInteger"></a>
 <dt><pre><span class="Keyword">proc</span> <a href="#divmod%2CBigInt%2CSomeInteger"><span class="Identifier">divmod</span></a><span class="Other">(</span><span class="Identifier">x</span><span class="Other">:</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a><span class="Other">;</span> <span class="Identifier">y</span><span class="Other">:</span> <span class="Identifier">SomeInteger</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">seq</span><span class="Other">[</span><a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a><span class="Other">]</span></pre></dt>
 <dd>
 
-
+Returns the seq @[x div y, x mod y]
 
 </dd>
 <a id="divmod,SomeInteger,BigInt"></a>
 <dt><pre><span class="Keyword">proc</span> <a href="#divmod%2CSomeInteger%2CBigInt"><span class="Identifier">divmod</span></a><span class="Other">(</span><span class="Identifier">x</span><span class="Other">:</span> <span class="Identifier">SomeInteger</span><span class="Other">;</span> <span class="Identifier">y</span><span class="Other">:</span> <a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">seq</span><span class="Other">[</span><a href="bignumber.html#BigInt"><span class="Identifier">BigInt</span></a><span class="Other">]</span></pre></dt>
 <dd>
 
-
+Returns the seq @[x div y, x mod y]
 
 </dd>
 
@@ -997,7 +964,7 @@ function main() {
       <div class="twelve-columns footer">
         <span class="nim-sprite"></span>
         <br/>
-        <small style="color: var(--hint);">Made with Nim. Generated: 2021-04-06 14:54:49 UTC</small>
+        <small style="color: var(--hint);">Made with Nim. Generated: 2021-05-25 14:23:45 UTC</small>
       </div>
     </div>
   </div>

@@ -62,6 +62,7 @@ proc newBigIntNoCheck(s: string): BigInt =
         result.sign = true
 
 proc newBigInt*(s: string, checkInput: bool = true): BigInt =
+    ## Constructs a new BigInt object from a string.
     if checkInput:
         var s3: string = s[0..^1]
         if ($s3[0] == "+") or ($s3[0] == "-"):
@@ -76,6 +77,7 @@ proc newBigInt*(s: string, checkInput: bool = true): BigInt =
     result = newBigIntNoCheck(s)
 
 proc newBigInt*(a: int64): BigInt =
+    ## Constructs a new BigInt object from int64.
     var
         n: int64
     result = new BigInt
@@ -92,12 +94,14 @@ proc newBigInt*(a: int64): BigInt =
         result.limbs.add(n div BASE)
     
 proc newBigInt*[T: int8|uint8|int16|uint16|int32|uint32|int](a: T): BigInt =
+    ## Constructs a new BigInt object from int8|uint8|int16|uint16|int32|uint32|int.
     result = newBigInt(int64(a))
 
 proc newBigInt*(a: uint64): BigInt =
+    ## Constructs a new BigInt object from uint64.
     result = newBigIntNoCheck($a)
 
-proc toStr*(x: BigInt): string = 
+proc toStr(x: BigInt): string = 
     var
         x2: seq[int64]
         s: string
@@ -120,6 +124,7 @@ proc toStr*(x: BigInt): string =
         result = s
 
 proc `$` *(x: BigInt): string =
+    ## Converts a BigInt object to a string.
     result = x.toStr()
 
 proc cmp(x, y: BigInt): int =
@@ -190,6 +195,7 @@ proc `!=` *(x, y: BigInt): bool =
     return x.cmp(y) != 0
 
 proc `-` *(x: BigInt): BigInt =
+    ## Negates x.
     if x == zero:
         result = zero
     else:
@@ -198,6 +204,7 @@ proc `-` *(x: BigInt): BigInt =
         result.limbs = x.limbs
     
 proc abs*(x: BigInt): BigInt =
+    ## Absolute value of x.
     result = new BigInt
     result.sign = true
     result.limbs = x.limbs
@@ -265,6 +272,7 @@ proc usub(x, y: BigInt): BigInt =
     result.removeLeadingZeros()
 
 proc `+` *(x, y: BigInt): BigInt =
+    ## Returns the sum of two BigInts.
     if abs(x) < abs(y):
         result = y + x
     else:
@@ -281,18 +289,23 @@ proc `+` *(x, y: BigInt): BigInt =
                 result.sign = true
 
 proc `+` *(x: BigInt, y: SomeInteger): BigInt =
+    ## Returns the sum of a BigInt and an integer.
     result = x + newBigInt(y)
 
 proc `+` *(x: SomeInteger, y: BigInt): BigInt =
+    ## Returns the sum of an integer and a BigInt.
     result = newBigInt(x) + y
 
 proc `-` *(x, y: BigInt): BigInt =
+    ## Returns the difference of two BigInts.
     result = x + (-y)
 
 proc `-` *(x: BigInt, y: SomeInteger): BigInt =
+    ## Returns the difference of a BigInt and an integer.
     result = x - newBigInt(y)
 
 proc `-` *(x: SomeInteger, y: BigInt): BigInt =
+    ## Returns the difference of an integer and a BigInt.
     result = newBigInt(x) - y
 
 # Schoolbook multiplication. Time complexity is O(n^2).
@@ -1338,7 +1351,7 @@ proc toom6hMul(x, y: BigInt): BigInt =
         z0 = zero
         result.sign = (x.sign == y.sign)
 
-proc toom65Sqr2(x: BigInt): BigInt = 
+proc toom65Sqr(x: BigInt): BigInt = 
     var
         m: int = len(x.limbs)
         a: int = m div 6
@@ -1389,7 +1402,7 @@ proc toom65Sqr2(x: BigInt): BigInt =
         x2.removeLeadingZeros()
         x3.removeLeadingZeros()
         x4.removeLeadingZeros()
-        z0 = x0.toom65Sqr2()
+        z0 = x0.toom65Sqr()
         #tmp = x5.mulInt(3) + x3.mulInt(27) + x1.mulInt(243)
         tmp = x5.mulInt(3)
         tmp11 = x3.mulInt(27)
@@ -1424,8 +1437,8 @@ proc toom65Sqr2(x: BigInt): BigInt =
         tmp2 = x4.mulInt(81)
         tmp11 = x2.mulInt(9) + x0
         tmp2 = tmp2.dadd(tmp11)
-        d = (tmp + tmp2).toom65Sqr2()
-        e = (tmp2.dsub(tmp)).toom65Sqr2()
+        d = (tmp + tmp2).toom65Sqr()
+        e = (tmp2.dsub(tmp)).toom65Sqr()
         tmp = x5.mulInt(2)
         tmp11 = x3.mulInt(8)
         tmp = tmp.dadd(tmp11)
@@ -1459,14 +1472,14 @@ proc toom65Sqr2(x: BigInt): BigInt =
         tmp2 = x4.mulInt(16) + x0
         tmp11 = x2.mulInt(4)
         tmp2 = tmp2.dadd(tmp11)
-        h = (tmp2 + tmp).toom65Sqr2()
-        i = (tmp2.dsub(tmp)).toom65Sqr2()
+        h = (tmp2 + tmp).toom65Sqr()
+        i = (tmp2.dsub(tmp)).toom65Sqr()
         tmp = x5.dadd(x3)
         tmp = tmp.dadd(x1)
         tmp2 = x4.dadd(x2)
         tmp2 = tmp2.dadd(x0)
-        j = (tmp2 + tmp).toom65Sqr2()
-        k = (tmp2.dsub(tmp)).toom65Sqr2()
+        j = (tmp2 + tmp).toom65Sqr()
+        k = (tmp2.dsub(tmp)).toom65Sqr()
         tmp = j + k
         tmp = tmp.dmulInt(50)
         tmp2 = j.dsub(k)
@@ -1642,6 +1655,7 @@ proc toom65Sqr2(x: BigInt): BigInt =
 # Karatsuba and Toom Cook multiplication are slow when the sizes of two operands are different, 
 # so filling zeros to smaller value.        
 proc `*` *(x, y: BigInt): BigInt =
+    ## Returns the product of two BigInts.
     var 
         m: int = len(x.limbs)
         n: int = len(y.limbs)
@@ -1657,7 +1671,7 @@ proc `*` *(x, y: BigInt): BigInt =
         elif n < TOOM6H_THRESHOLD * 100:
             result = x.toom4Sqr()
         else:
-            result = x.toom65Sqr2()
+            result = x.toom65Sqr()
     elif n == m:
         if n < KARATSUBA_THRESHOLD:
             result = x.schoolbookMul(y)
@@ -1682,21 +1696,27 @@ proc `*` *(x, y: BigInt): BigInt =
             result.limbs.delete(0,(m - n - 1))
             
 proc `*` *(x: BigInt, y: SomeInteger): BigInt =
+    ## Returns the product of a BigInt and an integer.
     result = x * newBigInt(y)
 
 proc `*` *(x: SomeInteger, y: BigInt): BigInt =
+    ## Returns the product of an integer and a BigInt.
     result = newBigInt(x) * y
 
 proc `+=` *[T: SomeInteger|BigInt](x: var BigInt, y: T) =
+    ## x is overwritten by x + y.
     x = x + y
 
 proc `-=` *[T: SomeInteger|BigInt](x: var BigInt, y: T) =
+    ## x is overwritten by x - y.
     x = x - y
 
 proc `*=` *[T: SomeInteger|BigInt](x: var BigInt, y: T) =
+    ## x is overwritten by x * y.
     x = x * y
 
 proc `^` *(x: BigInt, y: SomeInteger): BigInt =
+    ## Returns x to the yth power.
     var
         t: BigInt
         s: string
@@ -1727,6 +1747,7 @@ proc `^` *(x: BigInt, y: SomeInteger): BigInt =
             t *= t
 
 proc `^` *(x, y: BigInt): BigInt =
+    ## Returns x to the yth power.
     if abs(y) > newBigInt("9223372036854775807"):
         raise newException(ValueError, "Exponent too large.")
     result = x^(($y).parseBiggestInt)
@@ -1758,9 +1779,11 @@ iterator countdown*(x, y: BigInt, step: int = 1): BigInt =
 # BigFloat implementation
 
 proc setPrec*(prec: int) = 
+    ## Set precision of BigFloat.
     bfContext.prec = prec
 
 proc getPrec*(): int =
+    ## Get current precision of BigFloat.
     result = bfContext.prec
 
 proc truncate(x: BigFloat): BigFloat =
@@ -1780,6 +1803,7 @@ proc truncateForString(x: BigFloat): BigFloat =
     result.exp = x.exp
 
 proc newBigFloat*(s: string, checkInput: bool = true): BigFloat =
+    ## Constructs a new BigFloat object from a string.
     var
         s2: string
         resultSign: bool
@@ -1832,15 +1856,17 @@ proc newBigFloat*(s: string, checkInput: bool = true): BigFloat =
         result = result.truncate()
 
 proc newBigFloat*(a: BigInt): BigFloat =
+    ## Constructs a new BigFloat object from a BigInt.
     result = new BigFloat
     result.intPart = a
     result.exp = LOG_BASE * (len(result.intPart.limbs) - 1) + len($result.intPart.limbs[^1]) - 1
     result = result.truncate()
 
 proc newBigFloat*(a: SomeInteger): BigFloat =
+    ## Constructs a new BigFloat object from an integer.
     result = newBigFloat(newBigInt(a))
 
-proc toStr*(x: BigFloat): string = 
+proc toStr(x: BigFloat): string = 
     var
         s: string
         s2: string
@@ -1888,9 +1914,11 @@ proc toStr*(x: BigFloat): string =
             result.add(s)
 
 proc `$` *(x: BigFloat): string =
+    ## Converts a BigFloat to a string.
     result = x.toStr()
 
 proc `-` *(x: BigFloat): BigFloat =
+    ## Negates a BigFloat.
     result = new BigFloat
     if x.intPart == zero:
         result = x
@@ -1901,6 +1929,7 @@ proc `-` *(x: BigFloat): BigFloat =
         result.intPart.sign = not x.intPart.sign
 
 proc abs*(x: BigFloat): BigFloat = 
+    ## Absolute value of a BigFloat.
     result = new BigFloat
     result.intPart = newBigInt(0)
     result.intPart.limbs = x.intPart.limbs[0..^1]
@@ -1908,6 +1937,7 @@ proc abs*(x: BigFloat): BigFloat =
     result.exp = x.exp
     
 proc `+` *(x, y: BigFloat): BigFloat =
+    ## Returns the sum of two BigFloats.
     if x.intPart == zero:
         result = y
     elif y.intPart == zero:
@@ -1949,21 +1979,27 @@ proc `+` *(x, y: BigFloat): BigFloat =
             result = result.truncate()
 
 proc `+` *[T: SomeInteger|BigInt](x: BigFloat, y: T): BigFloat =
+    ## Returns the sum of a BigFloat and a BigInt or an integer.
     result = x + newBigFloat(y)
 
 proc `+` *[T: SomeInteger|BigInt](x: T, y: BigFloat): BigFloat =
+    ## Returns the sum of a BigInt or an integer and a BigFloat.
     result = newBigFloat(x) + y
 
 proc `-` *(x, y: BigFloat): BigFloat =
+    ## Returns the difference of two BigFloat.
     result = x + (-y)
 
 proc `-` *[T: SomeInteger|BigInt](x: BigFloat, y: T): BigFloat =
+    ## Returns the difference of a BigFloat and a BigInt or an integer.
     result = x - newBigFloat(y)
 
 proc `-` *[T: SomeInteger|BigInt](x: T, y: BigFloat): BigFloat =
+    ## Returns the difference of a BigInt or an integer and a BigFloat.
     result = newBigFloat(x) - y
 
 proc `*` *(x, y: BigFloat): BigFloat =
+    ## Returns the product of two BigFloats.
     if y.exp > x.exp:
         result = y * x
     elif (x.intPart == zero) or (y.intPart == zero):
@@ -1978,9 +2014,11 @@ proc `*` *(x, y: BigFloat): BigFloat =
         result = result.truncate()
 
 proc `*` *[T: SomeInteger|BigInt](x: BigFloat, y: T): BigFloat =
+    ## Returns the product of a BigFloat and a BigInt or an integer.
     result = x * newBigFloat(y)
 
 proc `*` *[T: SomeInteger|BigInt](x: T, y: BigFloat): BigFloat =
+    ## Returns the product of a BigInt or an integer and a BigFloat.
     result = newBigFloat(x) * y
 
 proc `>` *(x, y: BigFloat): bool = 
@@ -2054,30 +2092,38 @@ proc inv(x: BigFloat): BigFloat =
     result = result.truncate()
 
 proc `/` *(x, y: BigFloat): BigFloat =
+    ## x divided by y.
     if y.intPart == zero:
         raise newException(ValueError, "Division by zero.")
     result = x * (y.inv())
 
 proc `/` *[T:SomeInteger|BigInt](x: BigFloat, y: T): BigFloat =
+    ## x divided by y.
     result = x / newBigFloat(y)
 
 proc `/` *[T:SomeInteger|BigInt](x: T, y: BigFloat): BigFloat =
+    ## x divided by y.
     result = newBigFloat(x) / y
 
 proc `+=` *[T: BigFloat|BigInt|SomeInteger](x: var BigFloat, y: T) = 
+    ## x is overwritten by x + y
     x = x + y
 
 proc `-=` *[T: BigFloat|BigInt|SomeInteger](x: var BigFloat, y: T) = 
+    ## x is overwritten by x - y
     x = x - y
 
 proc `*=` *[T: BigFloat|BigInt|SomeInteger](x: var BigFloat, y: T) = 
+    ## x is overwritten by x * y
     x = x * y
 
 proc `/=` *[T: BigFloat|BigInt|SomeInteger](x: var BigFloat, y: T) = 
+    ## x is overwritten by x / y
     x = x / y
 
 # Square root of x by Newton-raphson method.
 proc sqrt*(x: BigFloat): BigFloat = 
+    ## Square root of a BigFloat.
     var 
         y: BigFloat
         one: BigFloat
@@ -2113,16 +2159,18 @@ proc sqrt*(x: BigFloat): BigFloat =
     result = result.truncate()
 
 proc sqrt*(x: BigInt): BigFloat =
+    ## Returns square root of a BigInt as a BigFloat.
     result = newBigFloat(x).sqrt()
 
 proc `^` *(x: BigFloat, y: SomeInteger): BigFloat =
+    ## Returns x to the yth power. Real number exponent is not supported. 
     if y < 0:
         if x.intPart == zero:
             raise newException(ValueError, "Division by zero.")
         else:
             result = (x^abs(y)).inv()
     elif y == 0:
-        result = BigFloat(intPart: zero, exp: 0)
+        result = BigFloat(intPart: newBigInt(1), exp: 0)
     elif y == 1:
         result = x
     else:
@@ -2144,6 +2192,7 @@ proc `^` *(x: BigFloat, y: SomeInteger): BigFloat =
             t *= t
 
 proc `^` *(x: BigFloat, y: BigInt): BigFloat =
+    ## Returns x to the yth power. Real number exponent is not supported. 
     if abs(y) > newBigInt("9223372036854775807"):
         raise newException(ValueError, "Exponent too large.")
     result = x^(($y).parseBiggestInt)
@@ -2151,6 +2200,7 @@ proc `^` *(x: BigFloat, y: BigInt): BigFloat =
 # BigInt division depends on BigFloat division, so implemented here.
 # Not tested well. Might be incorrect for some corner cases.
 proc `div` *(x, y: BigInt): BigInt =
+    ## Returns the quotient of x by y.
     if x == zero:
         return zero
     else:
@@ -2187,28 +2237,36 @@ proc `div` *(x, y: BigInt): BigInt =
                 result.sign = false
  
 proc `div` *(x: BigInt, y: SomeInteger): BigInt =
+    ## Returns the quotient of x by y.
     result = x div newBigInt(y)
 
 proc `div` *(x: SomeInteger, y: BigInt): BigInt =
+    ## Returns the quotient of x by y.
     result = newBigInt(x) div y
 
 proc `mod` *(x, y: BigInt): BigInt =
+    ## Returns the remainder of x by y.
     result = x - y * (x div y)
 
 proc `mod` *(x: BigInt, y: SomeInteger): BigInt =
+    ## Returns the remainder of x by y.
     result = x mod newBigInt(y)
 
 proc `mod` *(x: SomeInteger, y: BigInt): BigInt =
+    ## Returns the remainder of x by y.
     result = newBigInt(x) mod y
 
 proc divmod*(x, y: BigInt): seq[BigInt] = 
+    ## Returns the seq @[x div y, x mod y]
     var t: BigInt 
     t = x div y
     result = @[t, x - y * t]
 
 proc divmod*(x: BigInt, y: SomeInteger): seq[BigInt] =
+    ## Returns the seq @[x div y, x mod y]
     result = x.divmod(newBigInt(y))
 
 proc divmod*(x: SomeInteger, y: BigInt): seq[BigInt] =
+    ## Returns the seq @[x div y, x mod y]
     result = newBigInt(x).divmod(y)
 

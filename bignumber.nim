@@ -20,8 +20,8 @@ const
     LOG_BASE: int = 16
     KARATSUBA_THRESHOLD: int = 43
     TOOM3_THRESHOLD: int = 350
-    TOOM4_THRESHOLD: int = 820 # Toom-Cook 4 algorithm is used only for squaring
-    TOOM6H_THRESHOLD: int = 800
+    TOOM4_THRESHOLD: int = 750 
+    TOOM6H_THRESHOLD: int = 900
     validCharsForBigInt: string = "01234567890"
     validCharsForBigFloat: string = ".0123456789"
     
@@ -36,7 +36,7 @@ proc newBigIntNoCheck(s: string): BigInt =
         s2: string
         inputLength: int
         limbsLength: int
-        reminderLength: int
+        remainderLength: int
     result = new BigInt
     s2 = s[0..^1]   
     if $s2[0] == "-":
@@ -50,10 +50,10 @@ proc newBigIntNoCheck(s: string): BigInt =
     result.limbs = @[]
     inputLength = len(s2)
     limbsLength = inputLength div LOG_BASE
-    reminderLength = inputLength mod LOG_BASE
-    if reminderLength != 0:
-        result.limbs.add(parseBiggestInt(s2[0..reminderLength - 1]))
-        s2.delete(0,reminderLength - 1)
+    remainderLength = inputLength mod LOG_BASE
+    if remainderLength != 0:
+        result.limbs.add(parseBiggestInt(s2[0..remainderLength - 1]))
+        s2.delete(0,remainderLength - 1)
     for i in 0..(limbsLength - 1):
         result.limbs.add(parseBiggestInt(s2[LOG_BASE*i..(LOG_BASE*i + LOG_BASE-1)]))
     result.limbs.reverse
@@ -478,23 +478,24 @@ proc karatsubaMul(x, y: BigInt): BigInt =
             x1: BigInt = BigInt(sign: true, limbs: x.limbs[a..(m - 1)])
             y0: BigInt = BigInt(sign: true, limbs: y.limbs[0..(a - 1)])
             y1: BigInt = BigInt(sign: true, limbs: y.limbs[a..(n - 1)])
-            #z1: BigInt
+            z1: BigInt
             z0: BigInt       
-            #tmp: BigInt  
+            tmp: BigInt  
             zeros: seq[int64] = newSeq[int64](a)
         x0.removeLeadingZeros()
         y0.removeLeadingZeros()
         result = x1.karatsubaMul(y1)
         z0 = x0.karatsubaMul(y0)
-        #[tmp = (x1.dsub(x0)).karatsubaMul(y1.dsub(y0))
+        tmp = (x1.dsub(x0)).karatsubaMul(y1.dsub(y0))
+        x1 = zero
+        x0 = zero
+        y1 = zero
+        y0 = zero
         z1 = result + z0
-        z1 = z1.dsub(tmp)]#
-        x0 = (x1.dsub(x0)).karatsubaMul(y1.dsub(y0))
-        x1 = result + z0
-        x1 = x1.dsub(x0)
+        z1 = z1.dsub(tmp)
+        tmp = zero
         result.limbs.insert(zeros, 0)
-        #result = result.udadd(z1)
-        result = result.udadd(x1)
+        result = result.udadd(z1)
         result.limbs.insert(zeros, 0)
         result = result.udadd(z0)
         result.sign = (x.sign == y.sign)
@@ -857,6 +858,156 @@ proc toom3Sqr(x: BigInt): BigInt =
         result.limbs.insert(zeros, 0)
         result = result.udadd(z0)
         result.sign = (x.sign == y.sign)]#
+
+proc toom4hMul(x, y: BigInt): BigInt = 
+    var
+        m: int = len(x.limbs)
+        n: int = len(y.limbs)
+        a: int = min(m, n) div 4
+    if (m < TOOM4_THRESHOLD) or (n < TOOM4_THRESHOLD):
+        result = x.toom3Mul(y)
+    else:
+        var
+            x0: BigInt = BigInt(sign: true, limbs: x.limbs[0..(a - 1)])
+            x1: BigInt = BigInt(sign: true, limbs: x.limbs[a..(2 * a - 1)])
+            x2: BigInt = BigInt(sign: true, limbs: x.limbs[(2 * a)..(3 * a - 1)])
+            x3: BigInt = BigInt(sign: true, limbs: x.limbs[(3 * a)..(m - 1)])
+            y0: BigInt = BigInt(sign: true, limbs: y.limbs[0..(a - 1)])
+            y1: BigInt = BigInt(sign: true, limbs: y.limbs[a..(2 * a - 1)])
+            y2: BigInt = BigInt(sign: true, limbs: y.limbs[(2 * a)..(3 * a - 1)])
+            y3: BigInt = BigInt(sign: true, limbs: y.limbs[(3 * a)..(n - 1)])
+            amhalf: BigInt # a(-1/2)
+            ahalf: BigInt
+            am1: BigInt # a(-1)
+            a1: BigInt # a(1)
+            am2: BigInt # a(-2)
+            a2: BigInt # a(2)
+            tmp: BigInt
+            tmp2: BigInt
+            tmp3: BigInt
+            tmp4: BigInt
+            tmp5: BigInt
+            tmp6: BigInt
+            tmp7: BigInt
+            z5: BigInt 
+            z4: BigInt
+            z3: BigInt
+            z2: BigInt
+            z1: BigInt
+            z0: BigInt        
+            zeros: seq[int64] = newSeq[int64](a)  
+        x0.removeLeadingZeros()
+        x1.removeLeadingZeros()
+        x2.removeLeadingZeros()
+        y0.removeLeadingZeros()
+        y1.removeLeadingZeros()
+        y2.removeLeadingZeros()
+        z0 = x0.toom4hMul(y0)
+        tmp = x3.mulInt(2)
+        tmp7 = x1.mulInt(8)
+        tmp = tmp.dadd(tmp7)
+        tmp2 = x2.mulInt(4)
+        tmp7 = x0.mulInt(16)
+        tmp2 = tmp2.dadd(tmp7)
+        tmp3 = y3 + y1.mulInt(4)
+        tmp4 = y2.mulInt(2)
+        tmp7 = y0.mulInt(8)
+        tmp4 = tmp4.dadd(tmp7)
+        ahalf = (tmp2 + tmp).toom4hMul(tmp4 + tmp3)
+        amhalf = (tmp2.dsub(tmp)).toom4hMul(tmp4.dsub(tmp3))
+        tmp = x3.mulInt(8)
+        tmp7 = x1.mulInt(2)
+        tmp = tmp.dadd(tmp7)
+        tmp2 = x2.mulInt(4) + x0
+        tmp3 = y3.mulInt(8)
+        tmp7 = y1.mulInt(2)
+        tmp3 = tmp3.dadd(tmp7)
+        tmp4 = y2.mulInt(4) + y0
+        a2 = (tmp2 + tmp).toom4hMul(tmp4 + tmp3)
+        am2 = (tmp2.dsub(tmp)).toom4hMul(tmp4.dsub(tmp3))
+        tmp = x3.dadd(x1)
+        tmp2 = x2.dadd(x0)
+        tmp3 = y3.dadd(y1)
+        tmp4 = y2.dadd(y0)
+        x0 = zero
+        x1 = zero
+        x2 = zero
+        x3 = zero
+        y0 = zero
+        y1 = zero
+        y2 = zero
+        y3 = zero
+        a1 = (tmp2 + tmp).toom4hMul(tmp4 + tmp3)
+        am1 = (tmp2.dsub(tmp)).toom4hMul(tmp4.dsub(tmp3))
+        tmp = ahalf + amhalf
+        tmp2 = ahalf.dsub(amhalf)
+        tmp3 = a2 + am2
+        tmp4 = a2.dsub(am2)
+        tmp5 = a1 + am1
+        tmp6 = a1.dsub(am1)
+        a1 = zero
+        am1 = zero
+        a2 = zero
+        am2 = zero
+        ahalf = zero
+        amhalf = zero
+        #result = tmp + tmp3.mulInt(2) - tmp5.mulInt(40)
+        result = tmp + tmp3.mulInt(2)
+        tmp7 = tmp5.mulInt(40)
+        result = result.dsub(tmp7)
+        result = result.ddivInt(180) - z0
+        #z5 = tmp2 + tmp4.mulInt(8) - tmp6.mulInt(80)
+        z5 = tmp4.mulInt(8) + tmp2
+        tmp7 = tmp6.mulInt(80)
+        z5 = z5.dsub(tmp7)
+        z5 = z5.ddivInt(360)
+        #z4 = -tmp.mulInt(2) - tmp3 + tmp5.mulInt(68) + z0.mulInt(378)
+        z4 = tmp5.mulInt(68) - tmp3
+        tmp7 = tmp.mulInt(2)
+        z4 = z4.dsub(tmp7)
+        tmp7 = z0.mulInt(378)
+        z4 = z4.dadd(tmp7)
+        z4 = z4.ddivInt(72)
+        #z3 = -tmp2 - tmp4.mulInt(2) + tmp6.mulInt(68)
+        z3 = tmp6.mulInt(68) - tmp2
+        tmp7 = tmp4.mulInt(2)
+        z3 = z3.dsub(tmp7)
+        z3 = z3.ddivInt(72)
+        #z2 = tmp.mulInt(8) + tmp3 - tmp5.mulInt(80) - z0.mulInt(90).mulInt(21)
+        z2 = tmp.dmulInt(8)
+        z2 = z2.dadd(tmp3)
+        tmp7 = tmp5.dmulInt(80)
+        z2 = z2.dsub(tmp7)
+        tmp7 = z0.mulInt(90)
+        tmp7 = tmp7.dmulInt(21)
+        z2 = z2.dsub(tmp7)
+        z2 = z2.ddivInt(360)
+        #z1 = tmp2.mulInt(2) + tmp4 - tmp6.mulInt(40)
+        z1 = tmp2.dmulInt(2)
+        z1 = z1.dadd(tmp4)
+        tmp7 = tmp6.dmulInt(40)
+        z1 = z1.dsub(tmp7)
+        z1 = z1.ddivInt(180)
+        tmp = zero
+        tmp2 = zero
+        tmp3 = zero
+        tmp4 = zero
+        tmp5 = zero
+        tmp6 = zero
+        tmp7 = zero
+        result.limbs.insert(zeros, 0)
+        result = result.udadd(z5)
+        result.limbs.insert(zeros, 0)
+        result = result.udadd(z4)
+        result.limbs.insert(zeros, 0)
+        result = result.udadd(z3)
+        result.limbs.insert(zeros, 0)
+        result = result.udadd(z2)
+        result.limbs.insert(zeros, 0)
+        result = result.udadd(z1)
+        result.limbs.insert(zeros, 0)
+        result = result.udadd(z0)
+        result.sign = (x.sign == y.sign)
         
 # Toom Cook 4 squaring.
 # Evaluation points are infinity, 1, -1, 2, -2, -1/2 and 0.
@@ -978,7 +1129,8 @@ proc toom6hMul(x, y: BigInt): BigInt =
         n: int = len(y.limbs)
         a: int = min(m, n) div 6
     if (m < TOOM6H_THRESHOLD) or (n < TOOM6H_THRESHOLD):
-        result = x.toom3Mul(y)
+        #result = x.toom3Mul(y)
+        result = x.toom4hMul(y)
     else:
         var
             x0: BigInt = BigInt(sign: true, limbs: x.limbs[0..(a - 1)])
@@ -1014,6 +1166,7 @@ proc toom6hMul(x, y: BigInt): BigInt =
             tmp9: BigInt
             tmp10: BigInt
             tmp11: BigInt
+            tmp12: BigInt
             z9: BigInt
             z8: BigInt
             z7: BigInt
@@ -1179,9 +1332,12 @@ proc toom6hMul(x, y: BigInt): BigInt =
         result = tmp.mulInt(105)
         tmp11 = tmp3.mulInt(12)
         result = result.dsub(tmp11)
-        tmp11 = tmp5.mulInt(3)
-        result = result.dsub(tmp11)
-        tmp11 = tmp7.mulInt(3) + tmp9
+        #tmp11 = tmp5.mulInt(3)
+        #result = result.dsub(tmp11)
+        #tmp11 = tmp7.mulInt(3) + tmp9
+        #result = result.dadd(tmp11)
+        tmp11 = tmp7 - tmp5
+        tmp11 = tmp11.dmulInt(3) + tmp9
         result = result.dadd(tmp11)
         result = result.ddivInt(480)
         result = result.ddivInt(350) - z0
@@ -1206,14 +1362,19 @@ proc toom6hMul(x, y: BigInt): BigInt =
         z5 = z5.dadd(tmp11)
         z5 = z5.ddivInt(288)
         z5 = z5.ddivInt(100)
-        #z1 = tmp2.mulInt(105) - tmp4.mulInt(3) - tmp6.mulInt(12) + tmp8 + tmp10.mulInt(3)
+        #z1 = tmp2.mulInt(105) - tmp4.mulInt(3) + tmp10.mulInt(3) + tmp8 - tmp6.mulInt(12) 
         z1 = tmp2.mulInt(105)
-        tmp11 = tmp4.mulInt(3)
-        z1 = z1.dsub(tmp11)
+        #tmp11 = tmp4.mulInt(3)
+        #z1 = z1.dsub(tmp11)
+        #tmp11 = tmp6.mulInt(12)
+        #z1 = z1.dsub(tmp11)
+        #tmp11 = tmp8 + tmp10.mulInt(3)
+        #z1 = z1.dadd(tmp11)
+        tmp11 = tmp10 - tmp4
+        tmp11 = tmp11.dmulInt(3)
+        z1 = z1.dadd(tmp11) + tmp8
         tmp11 = tmp6.mulInt(12)
         z1 = z1.dsub(tmp11)
-        tmp11 = tmp8 + tmp10.mulInt(3)
-        z1 = z1.dadd(tmp11)
         z1 = z1.ddivInt(480)
         z1 = z1.ddivInt(350)
         tmp2.dneg()
@@ -1250,9 +1411,10 @@ proc toom6hMul(x, y: BigInt): BigInt =
         tmp8 = zero
         tmp10 = zero
         tmp5 = tmp5.dmulInt(2)
+        tmp12 = z0.mulInt(400)
         #z2 = -z0.mulInt(400).mulInt(35).mulInt(517) + tmp.mulInt(315) - tmp3.mulInt(9) - tmp5.mulInt(18) + tmp7 + tmp9.mulInt(27)
-        z2 = -z0.mulInt(400)
-        z2 = z2.dmulInt(35)
+        #z2 = -z0.mulInt(400)
+        z2 = -tmp12.mulInt(35)
         z2 = z2.dmulInt(517)
         tmp11 = tmp.mulInt(315)
         z2 = z2.dadd(tmp11)
@@ -1266,9 +1428,9 @@ proc toom6hMul(x, y: BigInt): BigInt =
         z2 = z2.ddivInt(576)
         tmp3 = tmp3.dmulInt(2)
         #z6 = -z0.mulInt(160).mulInt(649).mulInt(15) + tmp.mulInt(733) - tmp3.mulInt(13) - tmp5.mulInt(13) + tmp7.mulInt(3) + tmp9.mulInt(9)
-        z6 = -z0.mulInt(160)
+        #z6 = -z0.mulInt(160)
+        z6 = -tmp12.mulInt(6)
         z6 = z6.dmulInt(649)
-        z6 = z6.dmulInt(15)
         tmp11 = tmp.mulInt(733)
         z6 = z6.dadd(tmp11)
         tmp11 = tmp3 + tmp5
@@ -1283,8 +1445,8 @@ proc toom6hMul(x, y: BigInt): BigInt =
         tmp = tmp.dmulInt(35)
         tmp = tmp.dmulInt(481)
         #z8 = z0.mulInt(320).mulInt(175).mulInt(517) - tmp + tmp3.mulInt(746) + tmp5.mulInt(254) - tmp7.mulInt(193) - tmp9.mulInt(171)
-        z8 = z0.mulInt(320)
-        z8 = z8.dmulInt(175)
+        #z8 = z0.mulInt(320)
+        z8 = tmp12.mulInt(140)
         z8 = z8.dmulInt(517)
         tmp11 = tmp3.mulInt(746) - tmp
         z8 = z8.dadd(tmp11)
@@ -1298,8 +1460,8 @@ proc toom6hMul(x, y: BigInt): BigInt =
         z8 = z8.ddivInt(525)
         z8 = z8.ddivInt(5)
         #z4 = z0.mulInt(480).mulInt(350).mulInt(649) - tmp + tmp3.mulInt(254) + tmp5.mulInt(746) - tmp7.mulInt(57) - tmp9.mulInt(579)
-        z4 = z0.mulInt(480)
-        z4 = z4.dmulInt(350)
+        #z4 = z0.mulInt(480)
+        z4 = tmp12.dmulInt(420)
         z4 = z4.dmulInt(649)
         z4 = z4.dsub(tmp)
         tmp11 = tmp3.dmulInt(254)
@@ -1319,6 +1481,7 @@ proc toom6hMul(x, y: BigInt): BigInt =
         tmp7 = zero
         tmp9 = zero
         tmp11 = zero
+        tmp12 = zero
         result.limbs.insert(zeros, 0)
         result = result.udadd(z9)
         z9 = zero
@@ -1350,7 +1513,7 @@ proc toom6hMul(x, y: BigInt): BigInt =
         result = result.udadd(z0)
         z0 = zero
         result.sign = (x.sign == y.sign)
-
+        
 proc toom65Sqr(x: BigInt): BigInt = 
     var
         m: int = len(x.limbs)
@@ -1677,8 +1840,10 @@ proc `*` *(x, y: BigInt): BigInt =
             result = x.schoolbookMul(y)
         elif n < TOOM3_THRESHOLD:
             result = x.karatsubaMul(y)
-        elif n < TOOM6H_THRESHOLD:
+        elif n < TOOM4_THRESHOLD:
             result = x.toom3Mul(y)
+        elif n < TOOM6H_THRESHOLD:
+            result = x.toom4hMul(y)
         else:
             result = x.toom6hMul(y)
     else:
@@ -1688,8 +1853,11 @@ proc `*` *(x, y: BigInt): BigInt =
         elif n < TOOM3_THRESHOLD:
             result = x.karatsubaMul(y2)
             result.limbs.delete(0,(m - n - 1))
-        elif n < TOOM6H_THRESHOLD:
+        elif n < TOOM4_THRESHOLD:
             result = x.toom3Mul(y2)
+            result.limbs.delete(0,(m - n - 1))
+        elif n < TOOM6H_THRESHOLD:
+            result = x.toom4hMul(y2)
             result.limbs.delete(0,(m - n - 1))
         else:
             result = x.toom6hMul(y2)

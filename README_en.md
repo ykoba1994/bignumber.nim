@@ -60,4 +60,4 @@ Development of this library is in pre-alpha stage. This library is not intended 
 
 ## Licence
 
-Mit licence
+MIT licence

@@ -58,6 +58,6 @@ This library requires much memory (calculating one million digits of Pi with Chu
 Development of this library is in pre-alpha stage. This library is not intended to practical purposes.
 
 
-## Licence
+## License
 
-MIT licence
+MIT license

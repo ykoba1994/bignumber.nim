@@ -18,10 +18,10 @@ const
     BASE: int64 = 10000000000000000
     BASE2: int64 = 100000000
     LOG_BASE: int = 16
-    KARATSUBA_THRESHOLD: int = 43
-    TOOM3_THRESHOLD: int = 350
-    TOOM4_THRESHOLD: int = 750 
-    TOOM6H_THRESHOLD: int = 900
+    KARATSUBA_THRESHOLD: int = 43  # The optimal value drastically changes with CPUs (from 30 to 200).
+    TOOM3_THRESHOLD: int = 350  # The optimal value <= 700.
+    TOOM4_THRESHOLD: int = 750  # The optimal value <= 1500.
+    TOOM6H_THRESHOLD: int = 900  # The optimal value <= 2000.
     validCharsForBigInt: string = "01234567890"
     validCharsForBigFloat: string = ".0123456789"
     
@@ -232,43 +232,58 @@ proc uadd(x, y: BigInt): BigInt =
     var 
         m: int = len(x.limbs)
         n: int = len(y.limbs)
+        carry: int64 = 0'i64
+        t: int64
     result = new BigInt
-    result.limbs = newSeq[int64](m + 1)
+    result.limbs = newSeqUninitialized[int64](m + 1)
+    result.limbs[m] = 0
     result.sign = true
-    for i in 0..(m - 1):
-        result.limbs[i] = x.limbs[i]
     for i in 0..(n - 1):
-        result.limbs[i] += y.limbs[i]
-        if result.limbs[i] >= BASE:
-            result.limbs[i] -= BASE 
-            result.limbs[i+1] += 1 
-    for i in n..m:
-        if result.limbs[i] >= BASE:
-            result.limbs[i] -= BASE 
-            result.limbs[i+1] += 1 
+        t = x.limbs[i] + y.limbs[i] + carry
+        if t >= BASE:
+            t -= BASE 
+            carry = 1 
         else:
-            break
+            carry = 0
+        result.limbs[i] = t
+    for i in n..(m - 1):
+        t = x.limbs[i] + carry
+        if t >= BASE:
+            t -= BASE 
+            carry = 1
+        else:
+            carry = 0
+        result.limbs[i] = t
+    if carry == 1:
+        result.limbs[m] = 1
     result.removeLeadingZeros()
-   
+
 # Unsigned subtraction. Only works when x >= y >= 0.
 proc usub(x, y: BigInt): BigInt =
     var 
         m: int = len(x.limbs)
         n: int = len(y.limbs)
+        carry: int64 = 0'i64
+        t: int64
     result = new BigInt    
-    result.limbs = x.limbs[0..^1] 
     result.sign = true
+    result.limbs = newSeqUninitialized[int64](m)
     for i in 0..(n - 1):
-        result.limbs[i] -= y.limbs[i]
-        if result.limbs[i] < 0'i64:
-            result.limbs[i] += BASE
-            result.limbs[i+1] -= 1    
-    for i in n..(m - 1):
-        if result.limbs[i] < 0'i64:
-            result.limbs[i] += BASE
-            result.limbs[i+1] -= 1
+        t = x.limbs[i] - y.limbs[i] + carry
+        if t < 0'i64:
+            t += BASE
+            carry = -1    
         else:
-            break    
+            carry = 0
+        result.limbs[i] = t
+    for i in n..(m - 1):
+        t = x.limbs[i] + carry
+        if t < 0'i64:
+            t += BASE
+            carry = -1    
+        else:
+            carry = 0
+        result.limbs[i] = t
     result.removeLeadingZeros()
 
 proc `+` *(x, y: BigInt): BigInt =
@@ -393,18 +408,29 @@ proc udadd(x, y: var BigInt): BigInt =
     var
         m: int = len(x.limbs)
         n: int = len(y.limbs)
+        carry: int64 = 0'i64
+        t: int64
     x.limbs.setLen(m+1)
     for i in 0..(n - 1):
-        x.limbs[i] += y.limbs[i]
-        if x.limbs[i] >= BASE:
-            x.limbs[i] -= BASE 
-            x.limbs[i+1] += 1 
-    for i in n..m:
-        if x.limbs[i] >= BASE:
-            x.limbs[i] -= BASE 
-            x.limbs[i+1] += 1 
+        t = x.limbs[i] + y.limbs[i] + carry
+        if t >= BASE:
+            t -= BASE 
+            carry = 1
         else:
+            carry = 0
+        x.limbs[i] = t 
+    for i in n..(m - 1):
+        t = x.limbs[i] + carry
+        if t >= BASE:
+            t -= BASE 
+            carry = 1
+        else:
+            carry = 0
+        x.limbs[i] = t 
+        if carry == 0:
             break
+    if carry == 1:
+        x.limbs[m] = 1
     x.removeLeadingZeros()
     result = x
 
@@ -413,17 +439,26 @@ proc udsub(x, y: var BigInt): BigInt =
     var 
         m: int = len(x.limbs)
         n: int = len(y.limbs)
+        carry: int64 = 0'i64
+        t: int64
     for i in 0..(n - 1):
-        x.limbs[i] -= y.limbs[i]
-        if x.limbs[i] < 0'i64:
-            x.limbs[i] += BASE
-            x.limbs[i+1] -= 1    
-    for i in n..(m - 1):
-        if x.limbs[i] < 0'i64:
-            x.limbs[i] += BASE
-            x.limbs[i+1] -= 1
+        t = x.limbs[i] - y.limbs[i] + carry
+        if t < 0'i64:
+            t += BASE
+            carry = -1
         else:
-            break    
+            carry = 0
+        x.limbs[i] = t    
+    for i in n..(m - 1):
+        t = x.limbs[i] + carry
+        if t < 0'i64:
+            t += BASE
+            carry = -1
+        else:
+            carry = 0
+        x.limbs[i] = t
+        if carry == 0:
+            break
     x.removeLeadingZeros()
     result = x
 
@@ -532,38 +567,42 @@ proc mulInt(x: BigInt, y: int64): BigInt =
     var 
         m: int = len(x.limbs)
         t: int64
-        t2: int64
+        carry: int64 = 0
     result = new BigInt
     result.sign = x.sign
-    result.limbs = newSeqUninitialized[int64](m+1)
+    result.limbs = newSeqUninitialized[int64](m)
     for i in 0..(m-1):
-        result.limbs[i] = x.limbs[i] * y
-    result.limbs[m] = 0'i64
-    for i in 0..m:
-        t = result.limbs[i]
+        t = x.limbs[i] * y + carry
         if t >= BASE:
-            t2 = t div BASE
-            result.limbs[i] -= t2 * BASE
-            result.limbs[i+1] += t2
+            carry = t div BASE
+            t -= carry * BASE
+        else:
+            carry = 0
+        result.limbs[i] = t
+    if carry > 0:
+        result.limbs.setLen(m+1)
+        result.limbs[m] = carry
     result.removeLeadingZeros()
     if result.limbs == @[0'i64]:
         result.sign = true
-
+        
 # Destructive mulInt.
 proc dmulInt(x: var BigInt, y: int64): BigInt =
     var 
         m: int = len(x.limbs)
         t: int64
-        t2: int64
-    x.limbs.setLen(m+1)
+        carry: int64 = 0
     for i in 0..(m-1):
-        x.limbs[i] *= y
-    for i in 0..m:
-        t = x.limbs[i]
+        t = x.limbs[i] * y + carry
         if t >= BASE:
-            t2 = t div BASE
-            x.limbs[i] -= t2 * BASE
-            x.limbs[i+1] += t2
+            carry = t div BASE
+            t -= carry * BASE
+        else:
+            carry = 0
+        x.limbs[i] = t
+    if carry > 0:
+        x.limbs.setLen(m+1)
+        x.limbs[m] = carry
     x.removeLeadingZeros()
     if x.limbs == @[0'i64]:
         x.sign = true
@@ -571,14 +610,17 @@ proc dmulInt(x: var BigInt, y: int64): BigInt =
 
 # Division by small integers. Only used for Toom Cook multiplication. 
 proc divInt(x: BigInt, y: int64): BigInt = 
-    var t: int64
+    var 
+        t: int64
+        t2: int64
     result = new BigInt
     result.limbs = x.limbs[0..^1]
     result.sign = x.sign
     for i in countdown((len(x.limbs) - 1), 1):
         t = result.limbs[i]
-        result.limbs[i] = t div y
-        result.limbs[i-1] += (t - (result.limbs[i] * y)) * BASE
+        t2 = t div y
+        result.limbs[i] = t2
+        result.limbs[i-1] += (t - (t2 * y)) * BASE
     result.limbs[0] = result.limbs[0] div y
     result.removeLeadingZeros()
     if result.limbs == @[0'i64]:
@@ -586,11 +628,14 @@ proc divInt(x: BigInt, y: int64): BigInt =
 
 # Destructive divInt.
 proc ddivInt(x: var BigInt, y: int64): BigInt = 
-    var t: int64
+    var 
+        t: int64
+        t2: int64
     for i in countdown((len(x.limbs) - 1), 1):
         t = x.limbs[i]
-        x.limbs[i] = t div y
-        x.limbs[i-1] += (t - (x.limbs[i] * y)) * BASE
+        t2 = t div y
+        x.limbs[i] = t2
+        x.limbs[i-1] += (t - (t2 * y)) * BASE
     x.limbs[0] = x.limbs[0] div y
     x.removeLeadingZeros()
     if x.limbs == @[0'i64]:
@@ -654,7 +699,7 @@ proc toom3Mul(x, y: BigInt): BigInt =
         z3 = am1.dmulInt(3)
         z3 = z3.dadd(tmp)
         z3 = z3.ddivInt(6)
-        tmp3 = result.mulInt(2) 
+        tmp3 = result.mulInt(2)
         z3 = z3.dadd(tmp3)
         result.limbs.insert(zeros, 0)
         result = result.udadd(z3)
@@ -1177,7 +1222,7 @@ proc toom6hMul(x, y: BigInt): BigInt =
             z2: BigInt
             z1: BigInt
             z0: BigInt         
-            zeros: seq[int64] = newSeq[int64](a)  
+            zeros: seq[int64] = newSeq[int64](a)
         x0.removeLeadingZeros()
         x1.removeLeadingZeros()
         x2.removeLeadingZeros()
@@ -1559,7 +1604,7 @@ proc toom65Sqr(x: BigInt): BigInt =
             z2: BigInt
             z1: BigInt
             z0: BigInt         
-            zeros: seq[int64] = newSeq[int64](a)  
+            zeros: seq[int64] = newSeq[int64](a)
         x0.removeLeadingZeros()
         x1.removeLeadingZeros()
         x2.removeLeadingZeros()
@@ -1831,7 +1876,7 @@ proc `*` *(x, y: BigInt): BigInt =
             result = x.karatsubaSqr()
         elif n < TOOM4_THRESHOLD:
             result = x.toom3Sqr()
-        elif n < TOOM6H_THRESHOLD * 100:
+        elif n < TOOM6H_THRESHOLD * 50:
             result = x.toom4Sqr()
         else:
             result = x.toom65Sqr()

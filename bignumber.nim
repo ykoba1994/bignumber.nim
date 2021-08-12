@@ -18,10 +18,10 @@ const
     BASE: int64 = 10000000000000000
     BASE2: int64 = 100000000
     LOG_BASE: int = 16
-    KARATSUBA_THRESHOLD: int = 43  # The optimal value drastically changes with CPUs (from 30 to 200).
-    TOOM3_THRESHOLD: int = 350  # The optimal value <= 700.
-    TOOM4_THRESHOLD: int = 750  # The optimal value <= 1500.
-    TOOM6H_THRESHOLD: int = 900  # The optimal value <= 2000.
+    KARATSUBA_THRESHOLD: int = 65  # The optimal value drastically changes with CPUs (from 30 to 200). 
+    TOOM3_THRESHOLD: int = 350  # The optimal value <= 700. 
+    TOOM4_THRESHOLD: int = 600  # The optimal value <= 1500. 
+    TOOM6H_THRESHOLD: int = 900  # The optimal value <= 2000. 
     validCharsForBigInt: string = "01234567890"
     validCharsForBigFloat: string = ".0123456789"
     
@@ -89,7 +89,7 @@ proc newBigInt*(a: int64): BigInt =
         result.sign = true
         result.limbs.add(a)
         n = a
-    if n > BASE:
+    if n >= BASE:
         result.limbs[0] = n mod BASE
         result.limbs.add(n div BASE)
     
@@ -127,54 +127,35 @@ proc `$` *(x: BigInt): string =
     ## Converts a BigInt object to a string.
     result = x.toStr()
 
-proc cmp(x, y: BigInt): int =
-    var
-        count: int = 0
+proc ucmp(x, y: BigInt): int =
+    let
         m: int = len(x.limbs)
         n: int = len(y.limbs)
+    var
+        a: int = 0
+    if m > n:
+        return 1
+    elif m < n:
+        return -1
+    else:
+        for i in countdown((m - 1),0):
+            if x.limbs[i] > y.limbs[i]:
+                a = 1
+                break
+            elif x.limbs[i] < y.limbs[i]:
+                a = -1
+                break
+        return a
+
+proc cmp(x, y: BigInt): int =
     if x.sign and (not y.sign):
         return 1
     elif (not x.sign) and y.sign:
         return -1
     elif x.sign and y.sign:
-        if m > n:
-            return 1
-        elif m < n:
-            return -1
-        else:
-            if x.limbs == y.limbs:
-                return 0
-            else:
-                for i in countdown((m - 1),0):
-                    if x.limbs[i] > y.limbs[i]:
-                        count += 1
-                        break
-                    elif x.limbs[i] < y.limbs[i]:
-                        count -= 1
-                        break
-                if count > 0:
-                    return 1
-                else:
-                    return -1
+        return x.ucmp(y)
     else:
-        if m > n:
-            return -1
-        elif m < n:
-            return 1
-        elif x.limbs == y.limbs:
-                return 0
-        else:
-            for i in countdown((m - 1),0):
-                if x.limbs[i] > y.limbs[i]:
-                    count += 1
-                    break
-                elif x.limbs[i] < y.limbs[i]:
-                    count -= 1
-                    break
-            if count > 0:
-                return -1
-            else:
-                return 1
+        return -(x.ucmp(y))
 
 proc `>` *(x, y: BigInt): bool =
     return x.cmp(y) > 0
@@ -288,17 +269,19 @@ proc usub(x, y: BigInt): BigInt =
 
 proc `+` *(x, y: BigInt): BigInt =
     ## Returns the sum of two BigInts.
-    if abs(x) < abs(y):
+    if x.ucmp(y) < 0:
         result = y + x
     else:
         if (x >= zero) and (y >= zero):
             result = x.uadd(y)
         elif (x < zero) and (y < zero):
-            result = -(abs(x).uadd(abs(y)))
+            result = x.uadd(y)
+            result.sign = false
         elif (x >= zero) and (y < zero):
-            result = x.usub(abs(y))
+            result = x.usub(y)
         else:
-            result = -(abs(x).usub(y))
+            result = x.usub(y)
+            result.sign = false
             # The sign of zero is always positive.
             if result.limbs == @[0'i64]:
                 result.sign = true
@@ -313,7 +296,34 @@ proc `+` *(x: SomeInteger, y: BigInt): BigInt =
 
 proc `-` *(x, y: BigInt): BigInt =
     ## Returns the difference of two BigInts.
-    result = x + (-y)
+    if x.ucmp(y) >= 0:
+        if (x >= zero) and (y >= zero):
+            result = x.usub(y)
+        elif (x < zero) and (y < zero):
+            result = x.usub(y)
+            result.sign = false
+        elif (x >= zero) and (y < zero):
+            result = x.uadd(y)
+        else:
+            result = x.uadd(y)
+            result.sign = false
+            # The sign of zero is always positive.
+            if result.limbs == @[0'i64]:
+                result.sign = true
+    else:
+        if (y < zero) and (x < zero):
+            result = y.usub(x)
+        elif (y >= zero) and (x >= zero):
+            result = y.usub(x)
+            result.sign = false
+        elif (y < zero) and (x >= zero):
+            result = y.uadd(x)
+        else:
+            result = y.uadd(x)
+            result.sign = false
+            # The sign of zero is always positive.
+            if result.limbs == @[0'i64]:
+                result.sign = true
 
 proc `-` *(x: BigInt, y: SomeInteger): BigInt =
     ## Returns the difference of a BigInt and an integer.
@@ -365,6 +375,167 @@ proc schoolbookMul(x, y: BigInt): BigInt =
             result.limbs[i] = resultLimbsSplitted[2 * i] + (resultLimbsSplitted[2 * i + 1] * BASE2)
         result.removeLeadingZeros()
 
+# Schoolbook multiplication with static array.
+proc schoolbookMulStatic1(x, y: BigInt): BigInt =
+    var
+        m: int = len(x.limbs)
+        n: int = len(y.limbs)
+        t: int64
+        t2: int64
+        xi: int64
+        xLimbsSplitted: array[(KARATSUBA_THRESHOLD*5 div 8)*2, int64]
+        yLimbsSplitted: array[(KARATSUBA_THRESHOLD*5 div 8)*2, int64]
+        resultLimbsSplitted: array[(KARATSUBA_THRESHOLD*5 div 8)*4 + 2, int64]
+    if (x == zero) or (y == zero):
+        result = new BigInt
+        result.sign = true
+        result.limbs = @[0'i64]
+    else:
+        for i in 0..(m-1):
+            t = x.limbs[i] div BASE2
+            xLimbsSplitted[2*i] = x.limbs[i] - t*BASE2
+            xLimbsSplitted[2*i + 1] = t
+        for i in 0..(n-1):
+            t = y.limbs[i] div BASE2
+            yLimbsSplitted[2*i] = y.limbs[i] - t*BASE2
+            yLimbsSplitted[2*i + 1] = t
+        for i in 0..(2*m - 1):
+            xi = xLimbsSplitted[i]
+            for k in 0..(2*n - 1):
+                resultLimbsSplitted[i+k] += xi * yLimbsSplitted[k]
+        result = new BigInt
+        result.sign = (x.sign == y.sign)
+        for i in 0..(2*m + 2*n + 1):
+            t = resultLimbsSplitted[i]
+            if t >= BASE2:
+                t2 = t div BASE2
+                resultLimbsSplitted[i] -= t2 * BASE2
+                resultLimbsSplitted[i+1] += t2
+        result.limbs = newSeq[int64](len(resultLimbsSplitted) div 2)
+        for i in 0..((len(resultLimbsSplitted) div 2) - 1):
+            result.limbs[i] = resultLimbsSplitted[2 * i] + (resultLimbsSplitted[2 * i + 1] * BASE2)
+        result.removeLeadingZeros()
+
+proc schoolbookMulStatic2(x, y: BigInt): BigInt =
+    var
+        m: int = len(x.limbs)
+        n: int = len(y.limbs)
+        t: int64
+        t2: int64
+        xi: int64
+        xLimbsSplitted: array[(KARATSUBA_THRESHOLD*3 div 4)*2, int64]
+        yLimbsSplitted: array[(KARATSUBA_THRESHOLD*3 div 4)*2, int64]
+        resultLimbsSplitted: array[(KARATSUBA_THRESHOLD*3 div 4)*4 + 2, int64]
+    if (x == zero) or (y == zero):
+        result = new BigInt
+        result.sign = true
+        result.limbs = @[0'i64]
+    else:
+        for i in 0..(m-1):
+            t = x.limbs[i] div BASE2
+            xLimbsSplitted[2*i] = x.limbs[i] - t*BASE2
+            xLimbsSplitted[2*i + 1] = t
+        for i in 0..(n-1):
+            t = y.limbs[i] div BASE2
+            yLimbsSplitted[2*i] = y.limbs[i] - t*BASE2
+            yLimbsSplitted[2*i + 1] = t
+        for i in 0..(2*m - 1):
+            xi = xLimbsSplitted[i]
+            for k in 0..(2*n - 1):
+                resultLimbsSplitted[i+k] += xi * yLimbsSplitted[k]
+        result = new BigInt
+        result.sign = (x.sign == y.sign)
+        for i in 0..(2*m + 2*n + 1):
+            t = resultLimbsSplitted[i]
+            if t >= BASE2:
+                t2 = t div BASE2
+                resultLimbsSplitted[i] -= t2 * BASE2
+                resultLimbsSplitted[i+1] += t2
+        result.limbs = newSeq[int64](len(resultLimbsSplitted) div 2)
+        for i in 0..((len(resultLimbsSplitted) div 2) - 1):
+            result.limbs[i] = resultLimbsSplitted[2 * i] + (resultLimbsSplitted[2 * i + 1] * BASE2)
+        result.removeLeadingZeros()
+
+proc schoolbookMulStatic3(x, y: BigInt): BigInt =
+    var
+        m: int = len(x.limbs)
+        n: int = len(y.limbs)
+        t: int64
+        t2: int64
+        xi: int64
+        xLimbsSplitted: array[(KARATSUBA_THRESHOLD*7 div 8)*2, int64]
+        yLimbsSplitted: array[(KARATSUBA_THRESHOLD*7 div 8)*2, int64]
+        resultLimbsSplitted: array[(KARATSUBA_THRESHOLD*7 div 8)*4 + 2, int64]
+    if (x == zero) or (y == zero):
+        result = new BigInt
+        result.sign = true
+        result.limbs = @[0'i64]
+    else:
+        for i in 0..(m-1):
+            t = x.limbs[i] div BASE2
+            xLimbsSplitted[2*i] = x.limbs[i] - t*BASE2
+            xLimbsSplitted[2*i + 1] = t
+        for i in 0..(n-1):
+            t = y.limbs[i] div BASE2
+            yLimbsSplitted[2*i] = y.limbs[i] - t*BASE2
+            yLimbsSplitted[2*i + 1] = t
+        for i in 0..(2*m - 1):
+            xi = xLimbsSplitted[i]
+            for k in 0..(2*n - 1):
+                resultLimbsSplitted[i+k] += xi * yLimbsSplitted[k]
+        result = new BigInt
+        result.sign = (x.sign == y.sign)
+        for i in 0..(2*m + 2*n + 1):
+            t = resultLimbsSplitted[i]
+            if t >= BASE2:
+                t2 = t div BASE2
+                resultLimbsSplitted[i] -= t2 * BASE2
+                resultLimbsSplitted[i+1] += t2
+        result.limbs = newSeq[int64](len(resultLimbsSplitted) div 2)
+        for i in 0..((len(resultLimbsSplitted) div 2) - 1):
+            result.limbs[i] = resultLimbsSplitted[2 * i] + (resultLimbsSplitted[2 * i + 1] * BASE2)
+        result.removeLeadingZeros()
+
+proc schoolbookMulStatic4(x, y: BigInt): BigInt =
+    var
+        m: int = len(x.limbs)
+        n: int = len(y.limbs)
+        t: int64
+        t2: int64
+        xi: int64
+        xLimbsSplitted: array[KARATSUBA_THRESHOLD*2, int64]
+        yLimbsSplitted: array[KARATSUBA_THRESHOLD*2, int64]
+        resultLimbsSplitted: array[KARATSUBA_THRESHOLD*4 + 2, int64]
+    if (x == zero) or (y == zero):
+        result = new BigInt
+        result.sign = true
+        result.limbs = @[0'i64]
+    else:
+        for i in 0..(m-1):
+            t = x.limbs[i] div BASE2
+            xLimbsSplitted[2*i] = x.limbs[i] - t*BASE2
+            xLimbsSplitted[2*i + 1] = t
+        for i in 0..(n-1):
+            t = y.limbs[i] div BASE2
+            yLimbsSplitted[2*i] = y.limbs[i] - t*BASE2
+            yLimbsSplitted[2*i + 1] = t
+        for i in 0..(2*m - 1):
+            xi = xLimbsSplitted[i]
+            for k in 0..(2*n - 1):
+                resultLimbsSplitted[i+k] += xi * yLimbsSplitted[k]
+        result = new BigInt
+        result.sign = (x.sign == y.sign)
+        for i in 0..(2*m + 2*n + 1):
+            t = resultLimbsSplitted[i]
+            if t >= BASE2:
+                t2 = t div BASE2
+                resultLimbsSplitted[i] -= t2 * BASE2
+                resultLimbsSplitted[i+1] += t2
+        result.limbs = newSeq[int64](len(resultLimbsSplitted) div 2)
+        for i in 0..((len(resultLimbsSplitted) div 2) - 1):
+            result.limbs[i] = resultLimbsSplitted[2 * i] + (resultLimbsSplitted[2 * i + 1] * BASE2)
+        result.removeLeadingZeros()
+
 # Squaring is implemented separately from multiplication for better performance.
 proc schoolbookSqr(x: BigInt): BigInt =
     var
@@ -384,6 +555,150 @@ proc schoolbookSqr(x: BigInt): BigInt =
             xLimbsSplitted[2*i] = x.limbs[i] - t*BASE2
             xLimbsSplitted[2*i + 1] = t
         resultLimbsSplitted = newSeq[int64](4*m + 2)
+        for i in 0..(2*m - 1):
+            xi = xLimbsSplitted[i]
+            for k in (i + 1)..(2*m - 1):
+                resultLimbsSplitted[i+k] += xi * xLimbsSplitted[k] * 2
+        for i in 0..(2*m - 1):
+            resultLimbsSplitted[2*i] += xLimbsSplitted[i]^2
+        result = new BigInt
+        result.sign = true
+        for i in 0..(4*m + 1):
+            t = resultLimbsSplitted[i]
+            if t >= BASE2:
+                t2 = t div BASE2
+                resultLimbsSplitted[i] -= t2 * BASE2
+                resultLimbsSplitted[i+1] += t2
+        result.limbs = newSeq[int64](len(resultLimbsSplitted) div 2)
+        for i in 0..((len(resultLimbsSplitted) div 2) - 1):
+            result.limbs[i] = resultLimbsSplitted[2*i] + (resultLimbsSplitted[2*i + 1] * BASE2)
+        result.removeLeadingZeros()
+
+proc schoolbookSqrStatic1(x: BigInt): BigInt =
+    var
+        m: int = len(x.limbs)
+        t: int64
+        t2: int64
+        xi: int64
+        xLimbsSplitted: array[(KARATSUBA_THRESHOLD*5 div 8)*2, int64]
+        resultLimbsSplitted: array[(KARATSUBA_THRESHOLD*5 div 8)*4 + 2, int64]
+    if x == zero:
+        result = new BigInt
+        result.sign = true
+        result.limbs = @[0'i64]
+    else:
+        for i in 0..(m-1):
+            t = x.limbs[i] div BASE2
+            xLimbsSplitted[2*i] = x.limbs[i] - t*BASE2
+            xLimbsSplitted[2*i + 1] = t
+        for i in 0..(2*m - 1):
+            xi = xLimbsSplitted[i]
+            for k in (i + 1)..(2*m - 1):
+                resultLimbsSplitted[i+k] += xi * xLimbsSplitted[k] * 2
+        for i in 0..(2*m - 1):
+            resultLimbsSplitted[2*i] += xLimbsSplitted[i]^2
+        result = new BigInt
+        result.sign = true
+        for i in 0..(4*m + 1):
+            t = resultLimbsSplitted[i]
+            if t >= BASE2:
+                t2 = t div BASE2
+                resultLimbsSplitted[i] -= t2 * BASE2
+                resultLimbsSplitted[i+1] += t2
+        result.limbs = newSeq[int64](len(resultLimbsSplitted) div 2)
+        for i in 0..((len(resultLimbsSplitted) div 2) - 1):
+            result.limbs[i] = resultLimbsSplitted[2*i] + (resultLimbsSplitted[2*i + 1] * BASE2)
+        result.removeLeadingZeros()
+
+proc schoolbookSqrStatic2(x: BigInt): BigInt =
+    var
+        m: int = len(x.limbs)
+        t: int64
+        t2: int64
+        xi: int64
+        xLimbsSplitted: array[(KARATSUBA_THRESHOLD*3 div 4)*2, int64]
+        resultLimbsSplitted: array[(KARATSUBA_THRESHOLD*3 div 4)*4 + 2, int64]
+    if x == zero:
+        result = new BigInt
+        result.sign = true
+        result.limbs = @[0'i64]
+    else:
+        for i in 0..(m-1):
+            t = x.limbs[i] div BASE2
+            xLimbsSplitted[2*i] = x.limbs[i] - t*BASE2
+            xLimbsSplitted[2*i + 1] = t
+        for i in 0..(2*m - 1):
+            xi = xLimbsSplitted[i]
+            for k in (i + 1)..(2*m - 1):
+                resultLimbsSplitted[i+k] += xi * xLimbsSplitted[k] * 2
+        for i in 0..(2*m - 1):
+            resultLimbsSplitted[2*i] += xLimbsSplitted[i]^2
+        result = new BigInt
+        result.sign = true
+        for i in 0..(4*m + 1):
+            t = resultLimbsSplitted[i]
+            if t >= BASE2:
+                t2 = t div BASE2
+                resultLimbsSplitted[i] -= t2 * BASE2
+                resultLimbsSplitted[i+1] += t2
+        result.limbs = newSeq[int64](len(resultLimbsSplitted) div 2)
+        for i in 0..((len(resultLimbsSplitted) div 2) - 1):
+            result.limbs[i] = resultLimbsSplitted[2*i] + (resultLimbsSplitted[2*i + 1] * BASE2)
+        result.removeLeadingZeros()
+
+proc schoolbookSqrStatic3(x: BigInt): BigInt =
+    var
+        m: int = len(x.limbs)
+        t: int64
+        t2: int64
+        xi: int64
+        xLimbsSplitted: array[(KARATSUBA_THRESHOLD*7 div 8)*2, int64]
+        resultLimbsSplitted: array[(KARATSUBA_THRESHOLD*7 div 8)*4 + 2, int64]
+    if x == zero:
+        result = new BigInt
+        result.sign = true
+        result.limbs = @[0'i64]
+    else:
+        for i in 0..(m-1):
+            t = x.limbs[i] div BASE2
+            xLimbsSplitted[2*i] = x.limbs[i] - t*BASE2
+            xLimbsSplitted[2*i + 1] = t
+        for i in 0..(2*m - 1):
+            xi = xLimbsSplitted[i]
+            for k in (i + 1)..(2*m - 1):
+                resultLimbsSplitted[i+k] += xi * xLimbsSplitted[k] * 2
+        for i in 0..(2*m - 1):
+            resultLimbsSplitted[2*i] += xLimbsSplitted[i]^2
+        result = new BigInt
+        result.sign = true
+        for i in 0..(4*m + 1):
+            t = resultLimbsSplitted[i]
+            if t >= BASE2:
+                t2 = t div BASE2
+                resultLimbsSplitted[i] -= t2 * BASE2
+                resultLimbsSplitted[i+1] += t2
+        result.limbs = newSeq[int64](len(resultLimbsSplitted) div 2)
+        for i in 0..((len(resultLimbsSplitted) div 2) - 1):
+            result.limbs[i] = resultLimbsSplitted[2*i] + (resultLimbsSplitted[2*i + 1] * BASE2)
+        result.removeLeadingZeros()
+
+proc schoolbookSqrStatic4(x: BigInt): BigInt =
+    var
+        m: int = len(x.limbs)
+        t: int64
+        t2: int64
+        xi: int64
+        xLimbsSplitted: array[KARATSUBA_THRESHOLD*2, int64]
+        resultLimbsSplitted: array[KARATSUBA_THRESHOLD*4 + 2, int64]
+    if x == zero:
+        result = new BigInt
+        result.sign = true
+        result.limbs = @[0'i64]
+    else:
+        for i in 0..(m-1):
+            t = x.limbs[i] div BASE2
+            xLimbsSplitted[2*i] = x.limbs[i] - t*BASE2
+            xLimbsSplitted[2*i + 1] = t
         for i in 0..(2*m - 1):
             xi = xLimbsSplitted[i]
             for k in (i + 1)..(2*m - 1):
@@ -462,10 +777,6 @@ proc udsub(x, y: var BigInt): BigInt =
     x.removeLeadingZeros()
     result = x
 
-# Destructive absolute value.
-proc dabs(x: var BigInt) =
-    x.sign = true
- 
 # Destructive negation.
 proc dneg(x: var BigInt) =
     if x == zero:
@@ -475,21 +786,18 @@ proc dneg(x: var BigInt) =
 
 # Destructive addition.
 proc dadd(x, y: var BigInt): BigInt =
-    if abs(x) < abs(y):
+    #if abs(x) < abs(y):
+    if x.ucmp(y) < 0:
         result = y.dadd(x)
     else:
         if (x >= zero) and (y >= zero):
             result = x.udadd(y)
         elif (x < zero) and (y < zero):
-            x.dabs()
-            y.dabs()
-            result = -(x.udadd(y))
+            result = x.udadd(y)
         elif (x >= zero) and (y < zero):
-            y.dabs()
             result = x.udsub(y)
         else:
-            x.dabs()
-            result = -(x.udsub(y))
+            result = x.udsub(y)
             # The sign of zero is always positive.
             if result.limbs == @[0'i64]:
                 result.sign = true
@@ -505,8 +813,17 @@ proc karatsubaMul(x, y: BigInt): BigInt =
         m: int = len(x.limbs)
         n: int = len(y.limbs)
         a: int = min(m, n) div 2
-    if (m < KARATSUBA_THRESHOLD) or (n < KARATSUBA_THRESHOLD):
-        result = x.schoolbookMul(y)
+    if min(m, n) < KARATSUBA_THRESHOLD:
+        if max(m, n) < KARATSUBA_THRESHOLD*5 div 8:
+            result = x.schoolbookMulStatic1(y)
+        elif max(m, n) < KARATSUBA_THRESHOLD*3 div 4:
+            result = x.schoolbookMulStatic2(y)
+        elif max(m, n) < KARATSUBA_THRESHOLD*7 div 8:
+            result = x.schoolbookMulStatic3(y)
+        elif max(m, n) < KARATSUBA_THRESHOLD:
+            result = x.schoolbookMulStatic4(y)
+        else:
+            result = x.schoolbookMul(y)
     else:
         var
             x0: BigInt = BigInt(sign: true, limbs: x.limbs[0..(a - 1)])
@@ -541,7 +858,16 @@ proc karatsubaSqr(x: BigInt): BigInt =
         m: int = len(x.limbs)
         a: int = m div 2
     if m < KARATSUBA_THRESHOLD:
-        result = x.schoolbookSqr()
+        if m < KARATSUBA_THRESHOLD*5 div 8:
+            result = x.schoolbookSqrStatic1()
+        elif m < KARATSUBA_THRESHOLD*3 div 4:
+            result = x.schoolbookSqrStatic2()
+        elif m < KARATSUBA_THRESHOLD*7 div 8:
+            result = x.schoolbookSqrStatic3()
+        elif m < KARATSUBA_THRESHOLD:
+            result = x.schoolbookSqrStatic4()
+        else:
+            result = x.schoolbookSqr()
     else:
         var
             x0: BigInt = BigInt(sign: true, limbs: x.limbs[0..(a - 1)])
@@ -770,140 +1096,8 @@ proc toom3Sqr(x: BigInt): BigInt =
         result = result.udadd(z0)
         result.sign = true
 
-# Toom Cook 4 multiplication. Time complexity is O(n^1.404).
-# Evaluation points are infinity, 1, -1, 2, -2, -1/2 and 0.
-#[proc toom4Mul(x, y: BigInt): BigInt = 
-    var
-        m: int = len(x.limbs)
-        n: int = len(y.limbs)
-        a: int = min(m, n) div 4
-    if (m < TOOM4_THRESHOLD) or (n < TOOM4_THRESHOLD):
-        result = x.toom3Mul(y)
-    else:
-        var
-            x0: BigInt = BigInt(sign: true, limbs: x.limbs[0..(a - 1)])
-            x1: BigInt = BigInt(sign: true, limbs: x.limbs[a..(2 * a - 1)])
-            x2: BigInt = BigInt(sign: true, limbs: x.limbs[(2 * a)..(3 * a - 1)])
-            x3: BigInt = BigInt(sign: true, limbs: x.limbs[(3 * a)..(m - 1)])
-            y0: BigInt = BigInt(sign: true, limbs: y.limbs[0..(a - 1)])
-            y1: BigInt = BigInt(sign: true, limbs: y.limbs[a..(2 * a - 1)])
-            y2: BigInt = BigInt(sign: true, limbs: y.limbs[(2 * a)..(3 * a - 1)])
-            y3: BigInt = BigInt(sign: true, limbs: y.limbs[(3 * a)..(n - 1)])
-            amhalf: BigInt # a(-1/2)
-            am1: BigInt # a(-1)
-            a1: BigInt # a(1)
-            am2: BigInt # a(-2)
-            a2: BigInt # a(2)
-            tmp: BigInt
-            tmp2: BigInt
-            tmp3: BigInt
-            tmp4: BigInt
-            tmp5: BigInt
-            z5: BigInt
-            z4: BigInt
-            z3: BigInt
-            z2: BigInt
-            z1: BigInt
-            z0: BigInt         
-            zeros: seq[int64] = newSeq[int64](a)  
-        x0.removeLeadingZeros()
-        x1.removeLeadingZeros()
-        x2.removeLeadingZeros()
-        y0.removeLeadingZeros()
-        y1.removeLeadingZeros()
-        y2.removeLeadingZeros()
-        z0 = x0.toom4Mul(y0)
-        result = x3.toom4Mul(y3)
-        tmp = x3.mulInt(8)
-        tmp5 = x1.mulInt(2)
-        tmp = tmp.dadd(tmp5)
-        tmp2 = x2.mulInt(4) + x0
-        tmp3 = y3.mulInt(8)
-        tmp5 = y1.mulInt(2)
-        tmp3 = tmp3.dadd(tmp5)
-        tmp4 = y2.mulInt(4) + y0
-        a2 = (tmp + tmp2).toom4Mul(tmp3 + tmp4)
-        am2 = (tmp2.dsub(tmp)).toom4Mul(tmp4.dsub(tmp3))
-        tmp = x3 + x1
-        tmp2 = x2 + x0
-        tmp3 = y3 + y1
-        tmp4 = y2 + y0
-        a1 = (tmp + tmp2).toom4Mul(tmp3 + tmp4)
-        am1 = (tmp2.dsub(tmp)).toom4Mul(tmp4.dsub(tmp3))
-        tmp = x2.dmulInt(2)
-        tmp = tmp.dsub(x3)
-        tmp3 = x1.dmulInt(4)
-        tmp = tmp.dsub(tmp3)
-        tmp3 = x0.dmulInt(8)
-        tmp = tmp.dadd(tmp3)
-        tmp2 = y2.dmulInt(2)
-        tmp2 = tmp2.dsub(y3)
-        tmp3 = y1.dmulInt(4)
-        tmp2 = tmp2.dsub(tmp3)
-        tmp3 = y0.dmulInt(8)
-        tmp2 = tmp2.dadd(tmp3)
-        amhalf = tmp.toom4Mul(tmp2)
-        tmp = z0 + result
-        tmp2 = a1 + am1
-        tmp3 = am2.mulInt(5)
-        tmp4 = a2.mulInt(3)
-        z5 = tmp.mulInt(90)
-        tmp5 = amhalf.mulInt(2)
-        z5 = z5.dsub(tmp5)
-        tmp5 = tmp4 - tmp3
-        z5 = z5.dadd(tmp5)
-        tmp5 = a1.mulInt(20)
-        z5 = z5.dsub(tmp5)
-        tmp5 = am1.mulInt(60)
-        z5 = z5.dadd(tmp5)
-        z5 = z5.divInt(180)
-        z1 = -amhalf.mulInt(8)
-        tmp5 = tmp4 + tmp3
-        z1 = z1.dsub(tmp5)
-        tmp5 = a1.mulInt(40)
-        z1 = z1.dadd(tmp5)
-        tmp5 = am1.mulInt(120)
-        z1 = z1.dadd(tmp5)
-        z1 = z1.ddivInt(180)
-        tmp5 = tmp.mulInt(2)
-        z1 = z1.dadd(tmp5)
-        tmp3 = a2 + am2
-        tmp5 = tmp2.mulInt(4)
-        z4 = tmp3 - tmp5
-        tmp5 = z0.mulInt(6)
-        z4 = z4.dadd(tmp5)
-        tmp5 = result.mulInt(5)
-        z4 = z4.ddivInt(24)
-        z4 = z4.dsub(tmp5)
-        tmp = tmp.dmulInt(45)
-        z3 = amhalf.dsub(tmp)
-        z3 = z3.dadd(am2)
-        tmp = a1.dmulInt(7)
-        z3 = z3.dadd(tmp)
-        tmp = am1.dmulInt(27)
-        z3 = z3.dsub(tmp)
-        z3 = z3.ddivInt(18)
-        tmp = z0.mulInt(30)
-        z2 = tmp2.dmulInt(16)
-        z2 = z2.dsub(tmp3)
-        z2 = z2.dsub(tmp)
-        tmp = result.mulInt(4)
-        z2 = z2.ddivInt(24)
-        z2 = z2.dadd(tmp)
-        result.limbs.insert(zeros, 0)
-        result = result.udadd(z5)
-        result.limbs.insert(zeros, 0)
-        result = result.udadd(z4)
-        result.limbs.insert(zeros, 0)
-        result = result.udadd(z3)
-        result.limbs.insert(zeros, 0)
-        result = result.udadd(z2)
-        result.limbs.insert(zeros, 0)
-        result = result.udadd(z1)
-        result.limbs.insert(zeros, 0)
-        result = result.udadd(z0)
-        result.sign = (x.sign == y.sign)]#
-
+# Toom Cook 4.5 multiplication. Time complexity is O(n^1.404).
+# Evaluation points are 1, -1, 2, -2, 1/2, -1/2 and 0.
 proc toom4hMul(x, y: BigInt): BigInt = 
     var
         m: int = len(x.limbs)
@@ -1559,7 +1753,7 @@ proc toom6hMul(x, y: BigInt): BigInt =
         z0 = zero
         result.sign = (x.sign == y.sign)
         
-proc toom65Sqr(x: BigInt): BigInt = 
+proc toom6hSqr(x: BigInt): BigInt = 
     var
         m: int = len(x.limbs)
         a: int = m div 6
@@ -1610,7 +1804,7 @@ proc toom65Sqr(x: BigInt): BigInt =
         x2.removeLeadingZeros()
         x3.removeLeadingZeros()
         x4.removeLeadingZeros()
-        z0 = x0.toom65Sqr()
+        z0 = x0.toom6hSqr()
         #tmp = x5.mulInt(3) + x3.mulInt(27) + x1.mulInt(243)
         tmp = x5.mulInt(3)
         tmp11 = x3.mulInt(27)
@@ -1645,8 +1839,8 @@ proc toom65Sqr(x: BigInt): BigInt =
         tmp2 = x4.mulInt(81)
         tmp11 = x2.mulInt(9) + x0
         tmp2 = tmp2.dadd(tmp11)
-        d = (tmp + tmp2).toom65Sqr()
-        e = (tmp2.dsub(tmp)).toom65Sqr()
+        d = (tmp + tmp2).toom6hSqr()
+        e = (tmp2.dsub(tmp)).toom6hSqr()
         tmp = x5.mulInt(2)
         tmp11 = x3.mulInt(8)
         tmp = tmp.dadd(tmp11)
@@ -1680,14 +1874,14 @@ proc toom65Sqr(x: BigInt): BigInt =
         tmp2 = x4.mulInt(16) + x0
         tmp11 = x2.mulInt(4)
         tmp2 = tmp2.dadd(tmp11)
-        h = (tmp2 + tmp).toom65Sqr()
-        i = (tmp2.dsub(tmp)).toom65Sqr()
+        h = (tmp2 + tmp).toom6hSqr()
+        i = (tmp2.dsub(tmp)).toom6hSqr()
         tmp = x5.dadd(x3)
         tmp = tmp.dadd(x1)
         tmp2 = x4.dadd(x2)
         tmp2 = tmp2.dadd(x0)
-        j = (tmp2 + tmp).toom65Sqr()
-        k = (tmp2.dsub(tmp)).toom65Sqr()
+        j = (tmp2 + tmp).toom6hSqr()
+        k = (tmp2.dsub(tmp)).toom6hSqr()
         tmp = j + k
         tmp = tmp.dmulInt(50)
         tmp2 = j.dsub(k)
@@ -1879,10 +2073,22 @@ proc `*` *(x, y: BigInt): BigInt =
         elif n < TOOM6H_THRESHOLD * 50:
             result = x.toom4Sqr()
         else:
-            result = x.toom65Sqr()
+            result = x.toom6hSqr()
     elif n == m:
         if n < KARATSUBA_THRESHOLD:
             result = x.schoolbookMul(y)
+            #[
+            if n < KARATSUBA_THRESHOLD*5 div 16:
+                result = x.schoolbookMul(y)
+            elif n < KARATSUBA_THRESHOLD*5 div 8:
+                result = x.schoolbookMulStatic4(y)
+            elif n < KARATSUBA_THRESHOLD*3 div 4:
+                result = x.schoolbookMulStatic2(y)
+            elif n < KARATSUBA_THRESHOLD*7 div 8:
+                result = x.schoolbookMulStatic3(y)
+            else:
+                result = x.schoolbookMulStatic(y)
+            ]#
         elif n < TOOM3_THRESHOLD:
             result = x.karatsubaMul(y)
         elif n < TOOM4_THRESHOLD:
@@ -1892,19 +2098,22 @@ proc `*` *(x, y: BigInt): BigInt =
         else:
             result = x.toom6hMul(y)
     else:
-        var y2: BigInt = BigInt(sign: y.sign, limbs: concat(repeat(0'i64, (m - n)), y.limbs))
         if n < KARATSUBA_THRESHOLD:
             result = x.schoolbookMul(y)
         elif n < TOOM3_THRESHOLD:
+            var y2: BigInt = BigInt(sign: y.sign, limbs: concat(repeat(0'i64, (m - n)), y.limbs))
             result = x.karatsubaMul(y2)
             result.limbs.delete(0,(m - n - 1))
         elif n < TOOM4_THRESHOLD:
+            var y2: BigInt = BigInt(sign: y.sign, limbs: concat(repeat(0'i64, (m - n)), y.limbs))
             result = x.toom3Mul(y2)
             result.limbs.delete(0,(m - n - 1))
         elif n < TOOM6H_THRESHOLD:
+            var y2: BigInt = BigInt(sign: y.sign, limbs: concat(repeat(0'i64, (m - n)), y.limbs))
             result = x.toom4hMul(y2)
             result.limbs.delete(0,(m - n - 1))
         else:
+            var y2: BigInt = BigInt(sign: y.sign, limbs: concat(repeat(0'i64, (m - n)), y.limbs))
             result = x.toom6hMul(y2)
             result.limbs.delete(0,(m - n - 1))
             

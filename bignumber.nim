@@ -2121,15 +2121,22 @@ proc getPrec*(): int =
 
 proc truncate(x: BigFloat): BigFloat =
     var 
-        m: int = (bfContext.prec.toFloat / LOG_BASE.toFloat).ceil.toInt + 2
+        m: int = (getPrec().toFloat / LOG_BASE.toFloat).ceil.toInt + 2
         n: int = len(x.intPart.limbs) - m 
     result = new BigFloat
     result.intPart = BigInt(sign: x.intPart.sign, limbs: x.intPart.limbs[max(0, n)..^1])
     result.exp = x.exp
 
+proc truncateInPlace(x: var BigFloat) = 
+    var 
+        m: int = (getPrec().toFloat / LOG_BASE.toFloat).ceil.toInt + 2
+        n: int = len(x.intPart.limbs) - m
+    if n > 0:
+        x.intPart = BigInt(sign: x.intPart.sign, limbs: x.intPart.limbs[n..^1])
+
 proc truncateForString(x: BigFloat): BigFloat =
     var 
-        m: int = (bfContext.prec.toFloat / LOG_BASE.toFloat).ceil.toInt + 1
+        m: int = (getPrec().toFloat / LOG_BASE.toFloat).ceil.toInt + 1
         n: int = len(x.intPart.limbs) - m 
     result = new BigFloat
     result.intPart = BigInt(sign: x.intPart.sign, limbs: x.intPart.limbs[max(0, n)..^1])
@@ -2191,7 +2198,7 @@ proc newBigFloat*(s: string, checkInput: bool = true): BigFloat =
 proc newBigFloat*(a: BigInt): BigFloat =
     ## Constructs a new BigFloat object from a BigInt.
     result = new BigFloat
-    result.intPart = a
+    result.intPart = a.clone()
     result.exp = LOG_BASE * (len(result.intPart.limbs) - 1) + len($result.intPart.limbs[^1]) - 1
     result = result.truncate()
 
@@ -2250,31 +2257,31 @@ proc `$` *(x: BigFloat): string =
     ## Converts a BigFloat to a string.
     result = x.toStr()
 
+proc clone(x: BigFloat): BigFloat =
+    result = new BigFloat
+    result.intPart = x.intPart.clone()
+    result.exp = x.exp
+
 proc `-` *(x: BigFloat): BigFloat =
     ## Negates a BigFloat.
     result = new BigFloat
     if x.intPart == zero:
-        result = x
+        result = x.clone()
     else:
-        result.intPart = newBigInt(0)
-        result.intPart.limbs = x.intPart.limbs[0..^1]
-        result.exp = x.exp
+        result = x.clone()
         result.intPart.sign = not x.intPart.sign
 
 proc abs*(x: BigFloat): BigFloat = 
     ## Absolute value of a BigFloat.
-    result = new BigFloat
-    result.intPart = newBigInt(0)
-    result.intPart.limbs = x.intPart.limbs[0..^1]
+    result = x.clone()
     result.intPart.sign = true
-    result.exp = x.exp
-    
+
 proc `+` *(x, y: BigFloat): BigFloat =
     ## Returns the sum of two BigFloats.
     if x.intPart == zero:
-        result = y
+        result = y.clone()
     elif y.intPart == zero:
-        result = x
+        result = x.clone()
     elif y.exp > x.exp:
         result = y + x
     else:
@@ -2285,32 +2292,49 @@ proc `+` *(x, y: BigFloat): BigFloat =
             y2: BigInt
             tmp: string
             zeros: seq[int64]
-        if x.exp - y.exp > bfContext.prec:
-            result = x
+            xLimbsLength: int
+            resultLimbsLength: int
+        if x.exp - y.exp > getPrec():
+            result = x.clone()
         else:
             a = x.exp - LOG_BASE * (len(x.intPart.limbs) - 1) - len($(x.intPart.limbs[^1])) + 1
             b = y.exp - LOG_BASE * (len(y.intPart.limbs) - 1) - len($(y.intPart.limbs[^1])) + 1
-            x2 = BigInt(sign: x.intPart.sign, limbs: x.intPart.limbs[0..^1])
-            y2 = BigInt(sign: y.intPart.sign, limbs: y.intPart.limbs[0..^1])
-            if a >= b:
+            result = new BigFloat
+            if a == b:
+                result.intPart = x.intPart + y.intPart
+                result.exp = x.exp
+                xLimbsLength = LOG_BASE * (len(x.intPart.limbs) - 1) + len($(x.intPart.limbs[^1]))
+                resultLimbsLength = LOG_BASE * (len(result.intPart.limbs) - 1) + len($(result.intPart.limbs[^1]))
+                if resultLimbsLength != xLimbsLength:
+                    result.exp += resultLimbsLength - xLimbsLength
+            elif a > b:
+                x2 = BigInt(sign: x.intPart.sign, limbs: x.intPart.limbs[0..^1])
                 tmp = "1"
                 tmp.add("0".repeat((a - b) mod LOG_BASE))
                 x2 = x2 * newBigIntNoCheck(tmp)
                 zeros = repeat(0'i64,((a - b) div LOG_BASE))
                 x2.limbs.insert(zeros, 0)
+                result.intPart = x2 + y.intPart
+                result.exp = x.exp
+                xLimbsLength = LOG_BASE * (len(x2.limbs) - 1) + len($(x2.limbs[^1]))
+                resultLimbsLength = LOG_BASE * (len(result.intPart.limbs) - 1) + len($(result.intPart.limbs[^1]))
+                if resultLimbsLength != xLimbsLength:
+                    result.exp += resultLimbsLength - xLimbsLength
             else:
+                y2 = BigInt(sign: y.intPart.sign, limbs: y.intPart.limbs[0..^1])
                 tmp = "1"
                 tmp.add("0".repeat((b - a) mod LOG_BASE))
                 y2 = y2 * newBigIntNoCheck(tmp)
                 zeros = repeat(0'i64,((b - a) div LOG_BASE))
                 y2.limbs.insert(zeros, 0)
-            result = new BigFloat
-            result.intPart = x2 + y2
-            result.exp = x.exp
-            if LOG_BASE * (len(result.intPart.limbs) - 1) + len($(result.intPart.limbs[^1])) != LOG_BASE * (len(x2.limbs) - 1) + len($(x2.limbs[^1])):
-                result.exp += LOG_BASE * (len(result.intPart.limbs) - 1) + len($(result.intPart.limbs[^1])) - LOG_BASE * (len(x2.limbs) - 1) - len($(x2.limbs[^1]))
-            result = result.truncate()
-
+                result.intPart = x.intPart + y2
+                result.exp = x.exp
+                xLimbsLength = LOG_BASE * (len(x.intPart.limbs) - 1) + len($(x.intPart.limbs[^1]))
+                resultLimbsLength = LOG_BASE * (len(result.intPart.limbs) - 1) + len($(result.intPart.limbs[^1]))
+                if resultLimbsLength != xLimbsLength:
+                    result.exp += resultLimbsLength - xLimbsLength
+            result.truncateInPlace()
+            
 proc `+` *[T: SomeInteger|BigInt](x: BigFloat, y: T): BigFloat =
     ## Returns the sum of a BigFloat and a BigInt or an integer.
     result = x + newBigFloat(y)
@@ -2333,18 +2357,22 @@ proc `-` *[T: SomeInteger|BigInt](x: T, y: BigFloat): BigFloat =
 
 proc `*` *(x, y: BigFloat): BigFloat =
     ## Returns the product of two BigFloats.
+    result = new BigFloat
     if y.exp > x.exp:
         result = y * x
     elif (x.intPart == zero) or (y.intPart == zero):
-        result = new BigFloat
-        result.intPart = zero
+        result.intPart = newBigInt(0)
         result.exp = 0
     else:
-        result = new BigFloat
+        var
+            xLimbsLength: int = LOG_BASE * (len(x.intPart.limbs) - 1) + len($(x.intPart.limbs[^1]))
+            yLimbsLength: int = LOG_BASE * (len(y.intPart.limbs) - 1) + len($(y.intPart.limbs[^1]))
+            resultLimbsLength: int 
         result.intPart = x.intPart * y.intPart
         result.exp = x.exp + y.exp
-        result.exp += LOG_BASE * (len(result.intPart.limbs) - 1) + len($(result.intPart.limbs[^1])) - LOG_BASE * (len(x.intPart.limbs) - 1) - len($(x.intPart.limbs[^1])) - LOG_BASE * (len(y.intPart.limbs) - 1) - len($(y.intPart.limbs[^1])) + 1
-        result = result.truncate()
+        resultLimbsLength = LOG_BASE * (len(result.intPart.limbs) - 1) + len($(result.intPart.limbs[^1]))
+        result.exp += resultLimbsLength - xLimbsLength - yLimbsLength + 1
+        result.truncateInPlace()
 
 proc `*` *[T: SomeInteger|BigInt](x: BigFloat, y: T): BigFloat =
     ## Returns the product of a BigFloat and a BigInt or an integer.
@@ -2371,15 +2399,15 @@ proc `<` *(x, y: BigFloat): bool =
 
 proc max*(x, y: BigFloat): BigFloat =
     if x >= y:
-        result = x
+        result = x.clone()
     else:
-        result = y
+        result = y.clone()
 
 proc min*(x, y: BigFloat): BigFloat =
     if x < y:
-        result = x
+        result = x.clone()
     else:
-        result = y
+        result = y.clone()
 
 # Inverse of x by Newton-Raphson method. Used for division.
 proc inv(x: BigFloat): BigFloat =
@@ -2390,9 +2418,9 @@ proc inv(x: BigFloat): BigFloat =
         one: BigFloat
         two: BigFloat
         x2: BigFloat
-        t: int = (bfContext.prec * 53) div 100
+        t: int = (getPrec() * 53) div 100
         precList: seq[int] = @[t]
-        precOrig: int = bfContext.prec
+        precOrig: int = getPrec()
     while t >= 16:
         t = t div 2
         precList.add(t)
@@ -2408,7 +2436,7 @@ proc inv(x: BigFloat): BigFloat =
     if $ystring[0] == "-":
         result.exp -= 1
     x2 = x.truncate()
-    result = result.truncate()
+    result.truncateInPlace()
     one = newBigFloat("1")
     two = newBigFloat("2")
     for i in 0..3:
@@ -2416,13 +2444,11 @@ proc inv(x: BigFloat): BigFloat =
     for i in 0..(len(precList) - 1):
         t = precList[i] + 16
         setPrec(t)
-        result = result.truncate()
         result = result + result * (one - x.truncate() * result)
     setPrec(precOrig + 16)
-    result = result.truncate()
     result = result + result * (one - x * result)
     setPrec(precOrig)
-    result = result.truncate()
+    result.truncateInPlace()
 
 proc `/` *(x, y: BigFloat): BigFloat =
     ## x divided by y.
@@ -2461,9 +2487,9 @@ proc sqrt*(x: BigFloat): BigFloat =
         y: BigFloat
         one: BigFloat
         half: BigFloat
-        t: int = (bfContext.prec * 53) div 100
+        t: int = (getPrec() * 53) div 100
         precList: seq[int] = @[t]
-        precOrig: int = bfContext.prec
+        precOrig: int = getPrec()
     if not x.intPart.sign:
         raise newException(ValueError, "Negative value for sqrt is not supported.")
     while t >= 16:
@@ -2482,14 +2508,12 @@ proc sqrt*(x: BigFloat): BigFloat =
     for i in 0..(len(precList) - 1):
         t = precList[i] + 16
         setPrec(t)
-        result = result.truncate()
         result = result + (result * ((one - (x.truncate() * (result * result))) * half))
     setPrec(precOrig + 16)
-    result = result.truncate()
     result = result + (result * (((one - (x * (result * result))).truncate()) * half))
     result = result * x
     setPrec(precOrig)
-    result = result.truncate()
+    result.truncateInPlace()
 
 proc sqrt*(x: BigInt): BigFloat =
     ## Returns square root of a BigInt as a BigFloat.
@@ -2505,7 +2529,7 @@ proc `^` *(x: BigFloat, y: SomeInteger): BigFloat =
     elif y == 0:
         result = BigFloat(intPart: newBigInt(1), exp: 0)
     elif y == 1:
-        result = x
+        result = x.clone()
     else:
         var
             s: string
@@ -2535,13 +2559,13 @@ proc `^` *(x: BigFloat, y: BigInt): BigFloat =
 proc `div` *(x, y: BigInt): BigInt =
     ## Returns the quotient of x by y.
     if x == zero:
-        return zero
+        return zero.clone()
     else:
         var
             x2: BigInt = x.abs()
             y2: BigInt = y.abs()
         if x2 < y2:
-            return zero
+            return zero.clone()
         elif x2 == y2:
             if x.sign == y.sign:
                 result = newBigIntNoCheck("1")
@@ -2554,7 +2578,7 @@ proc `div` *(x, y: BigInt): BigInt =
                 zfloat: BigFloat
                 zstring: string
                 m: int = 2 * (16 * len(x.limbs) + 16)
-                precOrig: int = bfContext.prec
+                precOrig: int = getPrec()
                 eps: BigFloat
                 n: int
             setPrec(m)

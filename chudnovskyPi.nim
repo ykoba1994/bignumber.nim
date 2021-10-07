@@ -5,22 +5,22 @@ import bignumber, math, os, strutils, times
 
 type
     PQT = ref object of RootObj
-        p: BigInt
-        q: BigInt
-        t: BigInt
+        p: BigFloat
+        q: BigFloat
+        t: BigFloat
 
 const
     A: int64 = 13591409
     B: int64 = 545140134
 
-let C: BigInt = newBigInt("10939058860032000")
+let C: BigFloat = newBigFloat("10939058860032000")
 
 proc computePQT(a: int64, b: int64): PQT =
     if b == a + 1:
         result = new PQT
-        result.p = newBigInt(1 - 2 * b) * newBigInt(6 * b - 5) * newBigInt(6 * b - 1)
-        result.q = newBigInt(b) * newBigInt(b * b) * C
-        result.t = result.p * newBigInt(A + B * b)
+        result.p = newBigFloat(1 - 2 * b) * newBigFloat(6 * b - 5) * newBigFloat(6 * b - 1)
+        result.q = newBigFloat(b) * newBigFloat(b * b) * C
+        result.t = result.p * newBigFloat(A + B * b)
     else:
         var
             m = (a + b) div 2
@@ -37,14 +37,14 @@ proc calcPi(): BigFloat =
         pqt: PQT = computePQT(0, terms)
         num: BigFloat
         den: BigFloat
-    num = newBigFloat((pqt.q * newBigInt("426880"))) * newBigFloat("10005").sqrt()
-    den = newBigFloat((pqt.t + (pqt.q * newBigInt("13591409"))))
+    num = pqt.q * newBigFloat("426880") * newBigFloat("10005").sqrt()
+    den = pqt.t + (pqt.q * newBigFloat("13591409"))
     result = num / den
 
 let digits: int = paramStr(1).parseInt()
 setPrec(digits+32)
-echo "This program might take much time for large digits. Press ctrl + C to quit."
-var fileName: string = "pi"
+echo "This program might take much time for large digits. Press Ctrl + C to quit."
+var fileName: string = "pi_"
 fileName.add($digits)
 fileName.add("digits.txt")
 var f: File = open(fileName, FileMode.fmWrite)
@@ -53,3 +53,4 @@ f.writeLine ($calcPi())[0..digits+1]
 let t2: float = cpuTime()
 echo "Finished! Result is written in " & fileName & "."
 echo "Elapsed time is " & $(t2 - t1) & " seconds."
+

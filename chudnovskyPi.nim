@@ -1,4 +1,6 @@
-# Calculating Pi with Chudnovsky series. Reference: Fabrice Bellard (2010) Computation of 2700 billion decimal digits of Pi using a Desktop Computer. 
+# Calculating Pi with Chudnovsky series. 
+# Reference: Fabrice Bellard (2010) Computation of 2700 billion decimal digits of Pi using a Desktop Computer.
+# For optimal performance, build with 'nim compile -d:release --checks:off --gc:arc --cc:clang --passC:"-march=native" chudnovskyPi.nim'.
 # To calculate 1000000 digits of Pi, run "./chudnovskyPi 1000000".
 
 import bignumber, math, os, strutils, times

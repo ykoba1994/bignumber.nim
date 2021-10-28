@@ -18,10 +18,10 @@ const
     BASE: int64 = 10000000000000000
     BASE2: int64 = 100000000
     LOG_BASE: int = 16
-    KARATSUBA_THRESHOLD: int = 65  # The optimal value drastically changes with CPUs (from 30 to 200). 
-    TOOM3_THRESHOLD: int = 300  # The optimal value <= 700. 
-    TOOM4_THRESHOLD: int = 500 # The optimal value <= 1500. 
-    TOOM6H_THRESHOLD: int = 800  # The optimal value <= 2000. 
+    KARATSUBA_THRESHOLD: int = 90  # The optimal value drastically changes with CPUs (from 30 to 200). 
+    TOOM3_THRESHOLD: int = 550  # The optimal value <= 700. 
+    TOOM4_THRESHOLD: int = 850 # The optimal value <= 1500. 
+    TOOM6H_THRESHOLD: int = 1000  # The optimal value <= 2000. 
     validCharsForBigInt: string = "01234567890"
     validCharsForBigFloat: string = ".0123456789"
     
@@ -41,10 +41,10 @@ proc newBigIntNoCheck(s: string): BigInt =
     s2 = s[0..^1]   
     if $s2[0] == "-":
         result.sign = false
-        s2.delete(0, 0)
+        s2.delete(0..0)
     elif $s2[0] == "+":
         result.sign = true
-        s2.delete(0, 0)  
+        s2.delete(0..0)  
     else:
         result.sign = true
     result.limbs = @[]
@@ -53,7 +53,7 @@ proc newBigIntNoCheck(s: string): BigInt =
     remainderLength = inputLength mod LOG_BASE
     if remainderLength != 0:
         result.limbs.add(parseBiggestInt(s2[0..remainderLength - 1]))
-        s2.delete(0,remainderLength - 1)
+        s2.delete(0..remainderLength - 1)
     for i in 0..(limbsLength - 1):
         result.limbs.add(parseBiggestInt(s2[LOG_BASE*i..(LOG_BASE*i + LOG_BASE-1)]))
     result.limbs.reverse
@@ -66,7 +66,7 @@ proc newBigInt*(s: string, checkInput: bool = true): BigInt =
     if checkInput:
         var s3: string = s[0..^1]
         if ($s3[0] == "+") or ($s3[0] == "-"):
-            s3.delete(0,0)
+            s3.delete(0..0)
         for i in (0..<len(s3)):
             if $s3[i] == "+":
                 raise newException(ValueError, "Not leading '+' in input string.")
@@ -210,7 +210,7 @@ proc removeLeadingZeros(x: var BigInt) =
     var n: int
     while (x.limbs[^1] == 0'i64) and (len(x.limbs) > 1):
         n = len(x.limbs) - 1
-        x.limbs.delete(n, n)
+        x.limbs.delete(n..n)
 
 # Unsigned addition. Only works when x >= y >= 0.
 proc uadd(x, y: BigInt): BigInt =
@@ -2014,19 +2014,19 @@ proc `*` *(x, y: BigInt): BigInt =
         elif n < TOOM3_THRESHOLD:
             var y2: BigInt = BigInt(sign: y.sign, limbs: concat(repeat(0'i64, (m - n)), y.limbs))
             result = x.karatsubaMul(y2)
-            result.limbs.delete(0,(m - n - 1))
+            result.limbs.delete(0..(m - n - 1))
         elif n < TOOM4_THRESHOLD:
             var y2: BigInt = BigInt(sign: y.sign, limbs: concat(repeat(0'i64, (m - n)), y.limbs))
             result = x.toom3Mul(y2)
-            result.limbs.delete(0,(m - n - 1))
+            result.limbs.delete(0..(m - n - 1))
         elif n < TOOM6H_THRESHOLD:
             var y2: BigInt = BigInt(sign: y.sign, limbs: concat(repeat(0'i64, (m - n)), y.limbs))
             result = x.toom4hMul(y2)
-            result.limbs.delete(0,(m - n - 1))
+            result.limbs.delete(0..(m - n - 1))
         else:
             var y2: BigInt = BigInt(sign: y.sign, limbs: concat(repeat(0'i64, (m - n)), y.limbs))
             result = x.toom6hMul(y2)
-            result.limbs.delete(0,(m - n - 1))
+            result.limbs.delete(0..(m - n - 1))
             
 proc `*` *(x: BigInt, y: SomeInteger): BigInt =
     ## Returns the product of a BigInt and an integer.
@@ -2068,9 +2068,9 @@ proc `^` *(x: BigInt, y: SomeInteger): BigInt =
     else:
         s = y.toBin(64)
         while ($s[0] == "0") and (len(s) > 1):
-            s.delete(0, 0)
+            s.delete(0..0)
         m = len(s)
-        s.delete(m, m)
+        s.delete(m..m)
         m = len(s)
         t = x
         result = newBigInt(1)
@@ -2153,7 +2153,7 @@ proc newBigFloat*(s: string, checkInput: bool = true): BigFloat =
         var countPoints: int = 0
         var s3: string = s[0..^1]
         if ($s3[0] == "+") or ($s3[0] == "-"):
-            s3.delete(0,0)
+            s3.delete(0..0)
         for i in (0..<len(s3)):
             if $s3[i] == "+":
                 raise newException(ValueError, "Not leading '+' in input string.")
@@ -2184,7 +2184,7 @@ proc newBigFloat*(s: string, checkInput: bool = true): BigFloat =
             result = result.truncate()
         else:
             m = s2.find(".")
-            s2.delete(m,m)
+            s2.delete(m..m)
             result.exp = m - 1
             result.intPart = newBigIntNoCheck(s2)
             result.intPart.sign = resultSign
@@ -2537,9 +2537,9 @@ proc `^` *(x: BigFloat, y: SomeInteger): BigFloat =
             t: BigFloat
         s = y.toBin(64)
         while ($s[0] == "0") and (len(s) > 1):
-            s.delete(0, 0)
+            s.delete(0..0)
         m = len(s)
-        s.delete(m, m)
+        s.delete(m..m)
         m = len(s)
         t = x
         result = newBigFloat("1")

@@ -932,7 +932,7 @@ proc dmulInt(x: var BigInt, y: int64) =
     if x.limbs == @[0'i64]:
         x.sign = true
 
-# Destructive division by small integers.
+# Destructive division by small integers. Only used for Toom Cook multiplication.  
 proc ddivInt(x: var BigInt, y: int64) = 
     if x == zero:
         discard
@@ -1978,7 +1978,7 @@ proc toom6hSqr(x: BigInt): BigInt =
 
 # Multiplication. Used algorithms are changed with limbs length.
 # Karatsuba and Toom Cook multiplication are slow when the sizes of two operands are different, 
-# so filling zeros to smaller value.        
+# so filling zeros to smaller value.
 proc `*` *(x, y: BigInt): BigInt =
     ## Returns the product of two BigInts.
     var 
@@ -2555,7 +2555,6 @@ proc `^` *(x: BigFloat, y: BigInt): BigFloat =
     result = x^(($y).parseBiggestInt)
 
 # BigInt division depends on BigFloat division, so implemented here.
-# Not tested well. Might be incorrect for some corner cases.
 proc `div` *(x, y: BigInt): BigInt =
     ## Returns the quotient of x by y.
     if x == zero:
@@ -2579,20 +2578,20 @@ proc `div` *(x, y: BigInt): BigInt =
                 zstring: string
                 m: int = 2 * (16 * len(x.limbs) + 16)
                 precOrig: int = getPrec()
-                eps: BigFloat
                 n: int
             setPrec(m)
-            eps = BigFloat(intPart: newBigIntNoCheck("1"), exp: -(m div 2))
             xfloat = newBigFloat(x2)
             yfloat = newBigFloat(y2)
-            zfloat = (xfloat / yfloat) + eps
+            zfloat = xfloat / yfloat
             zstring = $zfloat
             n = zstring.find(".") - 1
             setPrec(precOrig)
-            result = newBigIntNoCheck(zstring[0..n])
+            result = newBigIntNoCheck(zstring[0..n]) + newBigInt("1")
+            if x < result * y:
+                result = result - newBigInt("1")
             if x.sign != y.sign:
                 result.sign = false
- 
+
 proc `div` *(x: BigInt, y: SomeInteger): BigInt =
     ## Returns the quotient of x by y.
     result = x div newBigInt(y)

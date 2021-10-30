@@ -69,11 +69,11 @@ proc newBigInt*(s: string, checkInput: bool = true): BigInt =
             s3.delete(0..0)
         for i in (0..<len(s3)):
             if $s3[i] == "+":
-                raise newException(ValueError, "Not leading '+' in input string.")
+                raise newException(ValueError, "Invalid character(s) in input string: '" & $s3[i]  & "'.")
             elif $s3[i] == "-":
-                raise newException(ValueError, "Not leading '-' in input string.")
+                raise newException(ValueError, "Invalid character(s) in input string: '" & $s3[i]  & "'.")
             elif not ($s3[i] in validCharsForBigInt):
-                raise newException(ValueError, "Invalid character(s) in input string.")
+                raise newException(ValueError, "Invalid character(s) in input string: '" & $s3[i]  & "'.")
     result = newBigIntNoCheck(s)
 
 proc newBigInt*(a: int64): BigInt =

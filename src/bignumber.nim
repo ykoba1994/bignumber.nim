@@ -2161,11 +2161,11 @@ proc newBigFloat*(s: string, checkInput: bool = true): BigFloat =
             s3.delete(0..0)
         for i in (0..<len(s3)):
             if $s3[i] == "+":
-                raise newException(ValueError, "Not leading '+' in input string.")
+                raise newException(ValueError, "Invalid character(s) in input string: '" & $s3[i]  & "'.")
             elif $s3[i] == "-":
-                raise newException(ValueError, "Not leading '-' in input string.")
+                raise newException(ValueError, "Invalid character(s) in input string: '" & $s3[i]  & "'.")
             elif not ($s3[i] in validCharsForBigFloat):
-                raise newException(ValueError, "Invalid character(s) in input string.")
+                raise newException(ValueError, "Invalid character(s) in input string: '" & $s3[i]  & "'.")
             elif $s3[i] == ".":
                 countPoints += 1
         if countPoints > 1:

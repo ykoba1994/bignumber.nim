@@ -207,10 +207,15 @@ proc min*(x, y: BigInt): BigInt =
         result = y.clone()
 
 proc removeLeadingZeros(x: var BigInt) =
-    var n: int
-    while (x.limbs[^1] == 0'i64) and (len(x.limbs) > 1):
-        n = len(x.limbs) - 1
-        x.limbs.delete(n,n)
+    var count = 0
+    let m = len(x.limbs)
+    for i in countdown(m-1, 1):
+        if x.limbs[i] == 0:
+            count += 1
+        else:
+            break
+    if count > 0:
+        x.limbs.setLen(m - count)
 
 # Unsigned addition. Only works when x >= y >= 0.
 proc uadd(x, y: BigInt): BigInt =

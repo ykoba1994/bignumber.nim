@@ -822,7 +822,6 @@ proc karatsubaMul(x, y: BigInt): BigInt =
     var
         m: int = len(x.limbs)
         n: int = len(y.limbs)
-        a: int = min(m, n) div 2
     if min(m, n) < KARATSUBA_THRESHOLD:
         if max(m, n) < KARATSUBA_THRESHOLD*5 div 8:
             result = x.schoolbookMulStatic1(y)
@@ -834,8 +833,15 @@ proc karatsubaMul(x, y: BigInt): BigInt =
             result = x.schoolbookMulStatic4(y)
         else:
             result = x.schoolbookMul(y)
+    elif m < n:
+        result = y.karatsubaMul(x)
+    elif m - n > 10:
+        var y2: BigInt = BigInt(sign: y.sign, limbs: concat(repeat(0'i64, (m - n)), y.limbs))
+        result = x.karatsubaMul(y2)
+        result.limbs.delete(0,(m - n - 1))
     else:
         var
+            a: int = n div 2
             x0: BigInt = BigInt(sign: true, limbs: x.limbs[0..(a - 1)])
             x1: BigInt = BigInt(sign: true, limbs: x.limbs[a..(m - 1)])
             y0: BigInt = BigInt(sign: true, limbs: y.limbs[0..(a - 1)])
@@ -2017,9 +2023,7 @@ proc `*` *(x, y: BigInt): BigInt =
         if n < KARATSUBA_THRESHOLD:
             result = x.schoolbookMul(y)
         elif n < TOOM3_THRESHOLD:
-            var y2: BigInt = BigInt(sign: y.sign, limbs: concat(repeat(0'i64, (m - n)), y.limbs))
-            result = x.karatsubaMul(y2)
-            result.limbs.delete(0,(m - n - 1))
+            result = x.karatsubaMul(y)
         elif n < TOOM4_THRESHOLD:
             var y2: BigInt = BigInt(sign: y.sign, limbs: concat(repeat(0'i64, (m - n)), y.limbs))
             result = x.toom3Mul(y2)

@@ -1108,11 +1108,17 @@ proc toom4hMul(x, y: BigInt): BigInt =
     var
         m: int = len(x.limbs)
         n: int = len(y.limbs)
-        a: int = min(m, n) div 4
     if (m < TOOM4_THRESHOLD) or (n < TOOM4_THRESHOLD):
         result = x.toom3Mul(y)
+    elif m < n:
+        result = y.toom4hMul(x)
+    elif m - n > 10:
+        var y2: BigInt = BigInt(sign: y.sign, limbs: concat(repeat(0'i64, (m - n)), y.limbs))
+        result = x.toom4hMul(y2)
+        result.limbs.delete(0..(m - n - 1))
     else:
         var
+            a: int = n div 4
             x0: BigInt = BigInt(sign: true, limbs: x.limbs[0..(a - 1)])
             x1: BigInt = BigInt(sign: true, limbs: x.limbs[a..(2 * a - 1)])
             x2: BigInt = BigInt(sign: true, limbs: x.limbs[(2 * a)..(3 * a - 1)])
@@ -2033,9 +2039,7 @@ proc `*` *(x, y: BigInt): BigInt =
         elif n < TOOM4_THRESHOLD:
             result = x.toom3Mul(y)
         elif n < TOOM6H_THRESHOLD:
-            var y2: BigInt = BigInt(sign: y.sign, limbs: concat(repeat(0'i64, (m - n)), y.limbs))
-            result = x.toom4hMul(y2)
-            result.limbs.delete(0..(m - n - 1))
+            result = x.toom4hMul(y)
         else:
             var y2: BigInt = BigInt(sign: y.sign, limbs: concat(repeat(0'i64, (m - n)), y.limbs))
             result = x.toom6hMul(y2)

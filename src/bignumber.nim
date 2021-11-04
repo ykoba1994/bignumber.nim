@@ -1364,11 +1364,17 @@ proc toom6hMul(x, y: BigInt): BigInt =
     var
         m: int = len(x.limbs)
         n: int = len(y.limbs)
-        a: int = min(m, n) div 6
     if (m < TOOM6H_THRESHOLD) or (n < TOOM6H_THRESHOLD):
         result = x.toom4hMul(y)
+    elif m < n:
+        result = y.toom6hMul(x)
+    elif m - n > 10:
+        var y2: BigInt = BigInt(sign: y.sign, limbs: concat(repeat(0'i64, (m - n)), y.limbs))
+        result = x.toom6hMul(y2)
+        result.limbs.delete(0..(m - n - 1))
     else:
         var
+            a: int = n div 6
             x0: BigInt = BigInt(sign: true, limbs: x.limbs[0..(a - 1)])
             x1: BigInt = BigInt(sign: true, limbs: x.limbs[a..(2 * a - 1)])
             x2: BigInt = BigInt(sign: true, limbs: x.limbs[(2 * a)..(3 * a - 1)])
@@ -2020,17 +2026,6 @@ proc `*` *(x, y: BigInt): BigInt =
             result = x.toom4Sqr()
         else:
             result = x.toom6hSqr()
-    elif n == m:
-        if n < KARATSUBA_THRESHOLD:
-            result = x.schoolbookMul(y)
-        elif n < TOOM3_THRESHOLD:
-            result = x.karatsubaMul(y)
-        elif n < TOOM4_THRESHOLD:
-            result = x.toom3Mul(y)
-        elif n < TOOM6H_THRESHOLD:
-            result = x.toom4hMul(y)
-        else:
-            result = x.toom6hMul(y)
     else:
         if n < KARATSUBA_THRESHOLD:
             result = x.schoolbookMul(y)
@@ -2041,9 +2036,7 @@ proc `*` *(x, y: BigInt): BigInt =
         elif n < TOOM6H_THRESHOLD:
             result = x.toom4hMul(y)
         else:
-            var y2: BigInt = BigInt(sign: y.sign, limbs: concat(repeat(0'i64, (m - n)), y.limbs))
-            result = x.toom6hMul(y2)
-            result.limbs.delete(0..(m - n - 1))
+            result = x.toom6hMul(y)
             
 proc `*` *(x: BigInt, y: SomeInteger): BigInt =
     ## Returns the product of a BigInt and an integer.

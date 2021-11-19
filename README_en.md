@@ -57,7 +57,7 @@ This library requires much memory (calculating one million digits of Pi with Chu
 
 Development of this library is in pre-alpha stage. This library is not intended to practical purposes.
 
-The source file in "src" directory supports only Nim-1.6 or later. For older version, use the file in "src/deprecated" directory.
+~~The source file in "src" directory supports only Nim-1.6 or later. For older version, use the file in "src/deprecated" directory.~~ The source file in "src" directory supports all version.
 
 
 ## License
